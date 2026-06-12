@@ -3,12 +3,16 @@ import http from 'http';
 import App from './app';
 import { connectDatabase } from './config/database';
 import { ENV } from './config/env';
+import { SocketManager } from './sockets/socket.manager';
 
 const bootstrap = async (): Promise<void> => {
   await connectDatabase();
 
   const appInstance = new App();
   const server = http.createServer(appInstance.app);
+
+  SocketManager.getInstance(server);
+  console.log('🔌 Socket.IO initialized');
 
   server.listen(ENV.PORT, () => {
     console.log(`🚀 Server running on http://localhost:${ENV.PORT}`);
