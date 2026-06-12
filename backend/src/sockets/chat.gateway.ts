@@ -6,13 +6,12 @@ import { ConversationRepository } from '../modules/conversations/conversation.re
 import { NotificationType } from '../common/types';
 
 export class ChatGateway {
-  private socketManager: SocketManager;
   private notificationService = new NotificationService();
   private unreadService = new UnreadService();
   private conversationRepository = new ConversationRepository();
 
-  constructor() {
-    this.socketManager = SocketManager.getInstance();
+  private get socketManager(): SocketManager {
+    return SocketManager.getInstance();
   }
 
   async onNewMessage(message: MessageEntity): Promise<void> {
