@@ -2,10 +2,12 @@ import { MessageRepository } from './message.repository';
 import { ConversationRepository } from '../conversations/conversation.repository';
 import { MessageEntity } from './message.entity';
 import { MessageType, MessageStatus } from '../../common/types';
+import { ChatGateway } from '../../sockets/chat.gateway';
 
 export class MessageService {
   private messageRepository = new MessageRepository();
   private conversationRepository = new ConversationRepository();
+  private chatGateway = new ChatGateway();
 
   async sendMessage(
     conversationId: string,
@@ -25,6 +27,7 @@ export class MessageService {
       deletedForUsers: [],
     });
 
+    await this.chatGateway.onNewMessage(message);
     return message;
   }
 
@@ -58,7 +61,9 @@ export class MessageService {
     if (message.senderId !== userId) throw new Error('Only sender can hard delete');
 
     await this.messageRepository.hardDeleteMessage(messageId);
-    return (await this.messageRepository.findById(messageId))!;
+    const updated = (await this.messageRepository.findById(messageId))!;
+    await this.chatGateway.onMessageDeleted(messageId, message.conversationId, 'hard');
+    return updated;
   }
 
   async unsendMessage(messageId: string, userId: string): Promise<MessageEntity> {
@@ -70,6 +75,8 @@ export class MessageService {
     if (minutesSinceSent > 10) throw new Error('Can only unsend within 10 minutes');
 
     await this.messageRepository.unsendMessage(messageId);
-    return (await this.messageRepository.findById(messageId))!;
+    const updated = (await this.messageRepository.findById(messageId))!;
+    await this.chatGateway.onMessageDeleted(messageId, message.conversationId, 'unsend');
+    return updated;
   }
 }

@@ -55,4 +55,12 @@ export class ConversationRepository {
     const uc = await this.ucRepository.findOne({ where: { userId, conversationId } });
     return !!uc;
   }
+
+ async getConversationMemberIds(conversationId: string): Promise<string[]> {
+  const members = await this.ucRepository.find({
+    where: { conversationId },
+    select: { userId: true },
+  });
+  return members.map((m) => m.userId);
+}
 }
