@@ -1,0 +1,88 @@
+import { create } from 'zustand';
+import { Message, UserConversation, Conversation } from '@/types/chat.types';
+
+interface ChatState {
+  conversations: UserConversation[];
+  activeConversationId: string | null;
+  messages: Record<string, Message[]>;
+  typingUsers: Record<string, string[]>;
+
+  setConversations: (conversations: UserConversation[]) => void;
+  setActiveConversation: (id: string | null) => void;
+  setMessages: (conversationId: string, messages: Message[]) => void;
+  addMessage: (message: Message) => void;
+  updateMessage: (messageId: string, data: Partial<Message>) => void;
+  removeMessage: (messageId: string, conversationId: string) => void;
+  setTyping: (conversationId: string, userId: string, isTyping: boolean) => void;
+  updateConversationLastMessage: (conversationId: string) => void;
+}
+
+export const useChatStore = create<ChatState>((set, get) => ({
+  conversations: [],
+  activeConversationId: null,
+  messages: {},
+  typingUsers: {},
+
+  setConversations: (conversations) => set({ conversations }),
+
+  setActiveConversation: (id) => set({ activeConversationId: id }),
+
+  setMessages: (conversationId, messages) =>
+    set((state) => ({
+      messages: { ...state.messages, [conversationId]: messages },
+    })),
+
+  addMessage: (message) =>
+    set((state) => {
+      const existing = state.messages[message.conversationId] || [];
+      const alreadyExists = existing.find((m) => m.id === message.id);
+      if (alreadyExists) return state;
+      return {
+        messages: {
+          ...state.messages,
+          [message.conversationId]: [...existing, message],
+        },
+      };
+    }),
+
+  updateMessage: (messageId, data) =>
+    set((state) => {
+      const updated = { ...state.messages };
+      for (const convId in updated) {
+        updated[convId] = updated[convId].map((m) =>
+          m.id === messageId ? { ...m, ...data } : m
+        );
+      }
+      return { messages: updated };
+    }),
+
+  removeMessage: (messageId, conversationId) =>
+    set((state) => ({
+      messages: {
+        ...state.messages,
+        [conversationId]: (state.messages[conversationId] || []).filter(
+          (m) => m.id !== messageId
+        ),
+      },
+    })),
+
+  setTyping: (conversationId, userId, isTyping) =>
+    set((state) => {
+      const current = state.typingUsers[conversationId] || [];
+      const updated = isTyping
+        ? [...new Set([...current, userId])]
+        : current.filter((id) => id !== userId);
+      return {
+        typingUsers: { ...state.typingUsers, [conversationId]: updated },
+      };
+    }),
+
+  updateConversationLastMessage: (conversationId) =>
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.conversationId === conversationId
+          ? { ...c, conversation: { ...c.conversation, updatedAt: new Date().toISOString() } }
+          : c
+      ),
+    })),
+}));
