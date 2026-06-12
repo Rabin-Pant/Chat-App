@@ -34,8 +34,8 @@ content: string | null;
   @Column({ type: 'enum', enum: MessageStatus, default: MessageStatus.SENT })
   status: MessageStatus;
 
-  @Column({ type: 'simple-array', nullable: true })
-  deletedForUsers: string[];
+ @Column({ type: 'simple-array', nullable: true })
+deletedForUsers: string[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -10,30 +10,33 @@ export class MessageRepository {
   }
 
   async getMessages(
-    conversationId: string,
-    userId: string,
-    limit: number = 50,
-    before?: string
-  ): Promise<MessageEntity[]> {
-    const query = this.repository
-      .createQueryBuilder('m')
-      .leftJoinAndSelect('m.sender', 'sender')
-      .where('m.conversationId = :conversationId', { conversationId })
-      .andWhere('NOT (:userId = ANY(COALESCE(m.deletedForUsers, ARRAY[]::uuid[])))', { userId })
-      .andWhere('m.type != :deleted', { deleted: MessageType.DELETED })
-      .orderBy('m.createdAt', 'DESC')
-      .limit(limit);
+  conversationId: string,
+  userId: string,
+  limit: number = 50,
+  before?: string
+): Promise<MessageEntity[]> {
+  const query = this.repository
+    .createQueryBuilder('m')
+    .leftJoinAndSelect('m.sender', 'sender')
+    .where('m.conversationId = :conversationId', { conversationId })
+    .andWhere(
+  '("m"."deletedForUsers" IS NULL OR "m"."deletedForUsers" NOT LIKE :userId)',
+  { userId: `%${userId}%` }
+)
+    .andWhere('m.type != :deleted', { deleted: MessageType.DELETED })
+    .orderBy('m.createdAt', 'DESC')
+    .limit(limit);
 
-    if (before) {
-      const beforeMessage = await this.findById(before);
-      if (beforeMessage) {
-        query.andWhere('m.createdAt < :beforeDate', { beforeDate: beforeMessage.createdAt });
-      }
+  if (before) {
+    const beforeMessage = await this.findById(before);
+    if (beforeMessage) {
+      query.andWhere('m.createdAt < :beforeDate', { beforeDate: beforeMessage.createdAt });
     }
-
-    const messages = await query.getMany();
-    return messages.reverse();
   }
+
+  const messages = await query.getMany();
+  return messages.reverse();
+}
 
   async createMessage(data: Partial<MessageEntity>): Promise<MessageEntity> {
     const message = this.repository.create(data);
@@ -66,14 +69,17 @@ export class MessageRepository {
   }
 
   async getMessagesAfterDate(conversationId: string, userId: string, afterDate: Date): Promise<MessageEntity[]> {
-    return this.repository
-      .createQueryBuilder('m')
-      .leftJoinAndSelect('m.sender', 'sender')
-      .where('m.conversationId = :conversationId', { conversationId })
-      .andWhere('m.createdAt > :afterDate', { afterDate })
-      .andWhere('NOT (:userId = ANY(COALESCE(m.deletedForUsers, ARRAY[]::uuid[])))', { userId })
-      .andWhere('m.type != :deleted', { deleted: MessageType.DELETED })
-      .orderBy('m.createdAt', 'ASC')
-      .getMany();
-  }
+  return this.repository
+    .createQueryBuilder('m')
+    .leftJoinAndSelect('m.sender', 'sender')
+    .where('m.conversationId = :conversationId', { conversationId })
+    .andWhere('m.createdAt > :afterDate', { afterDate })
+    .andWhere(
+  '("m"."deletedForUsers" IS NULL OR "m"."deletedForUsers" NOT LIKE :userId)',
+  { userId: `%${userId}%` }
+)
+    .andWhere('m.type != :deleted', { deleted: MessageType.DELETED })
+    .orderBy('m.createdAt', 'ASC')
+    .getMany();
+}
 }
