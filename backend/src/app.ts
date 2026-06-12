@@ -7,6 +7,7 @@ import { ENV } from './config/env';
 import authRoutes from './modules/auth/auth.routes';
 import userRoutes from './modules/users/user.routes';
 import messageRoutes from './modules/messages/message.routes';
+import groupRoutes from './modules/groups/group.routes';
 
 class App {
   public app: Application;
@@ -35,6 +36,7 @@ class App {
     this.app.use('/api/auth', authRoutes);
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/chat', messageRoutes);
+    this.app.use('/api/groups', groupRoutes);
   }
 
   public registerRoutes(path: string, router: express.Router): void {

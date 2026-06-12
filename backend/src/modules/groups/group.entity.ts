@@ -1,9 +1,10 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn
+  CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany
 } from 'typeorm';
 import { UserEntity } from '../users/user.entity';
 import { ConversationEntity } from '../conversations/conversation.entity';
+import { GroupMemberEntity } from './group-member.entity';
 
 @Entity('groups')
 export class GroupEntity {
@@ -32,6 +33,9 @@ export class GroupEntity {
   @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })
   owner: UserEntity;
+
+  @OneToMany(() => GroupMemberEntity, (member) => member.group)
+  members: GroupMemberEntity[];
 
   @CreateDateColumn()
   createdAt: Date;
