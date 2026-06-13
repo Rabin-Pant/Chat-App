@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chat.store';
 import { useAuthStore } from '@/store/auth.store';
 import { usePresenceStore } from '@/store/presence.store';
@@ -14,9 +14,19 @@ import ClearChatDialog from '@/components/chat/ClearChatDialog';
 
 export default function ConversationPage() {
   const params = useParams();
+  const router = useRouter();
   const conversationId = params.conversationId as string;
   const { user } = useAuthStore();
-  const { messages, setMessages, addMessage, setActiveConversation, typingUsers, updateMessage, removeMessage, conversations } = useChatStore();
+  const {
+    messages,
+    setMessages,
+    addMessage,
+    setActiveConversation,
+    typingUsers,
+    updateMessage,
+    removeMessage,
+    conversations,
+  } = useChatStore();
   const { isOnline } = usePresenceStore();
   const [loading, setLoading] = useState(true);
   const [otherUser, setOtherUser] = useState<User | null>(null);
@@ -29,6 +39,7 @@ export default function ConversationPage() {
 
   useEffect(() => {
     if (!conversationId) return;
+
     setActiveConversation(conversationId);
     const socket = getSocket();
     socket.emit('join:conversation', conversationId);
@@ -47,7 +58,9 @@ export default function ConversationPage() {
     }
 
     const handleNewMessage = (message: any) => {
-      if (message.conversationId === conversationId) addMessage(message);
+      if (message.conversationId === conversationId) {
+        addMessage(message);
+      }
     };
 
     const handleMessageDeleted = ({ messageId, type }: any) => {
@@ -75,11 +88,15 @@ export default function ConversationPage() {
 
   const headerName = otherUser
     ? otherUser.displayName || otherUser.email
-    : group ? group.name : 'Conversation';
+    : group
+    ? group.name
+    : 'Conversation';
 
   const headerAvatar = otherUser
     ? otherUser.displayName?.[0] || otherUser.email[0].toUpperCase()
-    : group ? '#' : '?';
+    : group
+    ? '#'
+    : '?';
 
   const online = otherUser ? isOnline(otherUser.id) : false;
 
@@ -100,22 +117,36 @@ export default function ConversationPage() {
               {headerAvatar}
             </div>
             {otherUser && (
-              <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                online ? 'bg-green-500' : 'bg-gray-300'
-              }`} />
+              <span
+                className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
+                  online ? 'bg-green-500' : 'bg-gray-300'
+                }`}
+              />
             )}
           </div>
-          <div>
+          <div
+            className={group ? 'cursor-pointer' : ''}
+            onClick={() =>
+              group && router.push(`/chat/${conversationId}/group`)
+            }
+          >
             <p className="text-sm font-medium text-gray-900">{headerName}</p>
             {otherUser && (
               <p className="text-xs text-gray-400">
-                {online ? 'Online' : otherUser.lastSeenAt
-                  ? `Last seen ${new Date(otherUser.lastSeenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                {online
+                  ? 'Online'
+                  : otherUser.lastSeenAt
+                  ? `Last seen ${new Date(otherUser.lastSeenAt).toLocaleTimeString(
+                      [],
+                      { hour: '2-digit', minute: '2-digit' }
+                    )}`
                   : 'Offline'}
               </p>
             )}
             {group && (
-              <p className="text-xs text-gray-400">{group.members?.length || 0} members</p>
+              <p className="text-xs text-blue-500">
+                {group.members?.length || 0} members · tap to view
+              </p>
             )}
           </div>
         </div>
@@ -126,14 +157,38 @@ export default function ConversationPage() {
             className="p-2 hover:bg-gray-100 rounded-lg transition"
             aria-label="More options"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01" />
+            <svg
+              className="w-5 h-5 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 12h.01M12 12h.01M19 12h.01"
+              />
             </svg>
           </button>
           {showMenu && (
             <div className="absolute right-0 top-10 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-10 min-w-40">
+              {group && (
+                <button
+                  onClick={() => {
+                    router.push(`/chat/${conversationId}/group`);
+                    setShowMenu(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Group info
+                </button>
+              )}
               <button
-                onClick={() => { setShowClearDialog(true); setShowMenu(false); }}
+                onClick={() => {
+                  setShowClearDialog(true);
+                  setShowMenu(false);
+                }}
                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
               >
                 Delete chat

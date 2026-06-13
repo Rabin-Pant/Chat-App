@@ -2,6 +2,7 @@ import { AppDataSource } from '../../config/database';
 import { ConversationEntity } from './conversation.entity';
 import { UserConversationEntity } from './user-conversation.entity';
 import { ConversationType } from '../../common/types';
+import { GroupEntity } from '../groups/group.entity';
 
 export class ConversationRepository {
   private repository = AppDataSource.getRepository(ConversationEntity);
@@ -50,11 +51,14 @@ export class ConversationRepository {
         .andWhere('uc2.userId != :userId', { userId })
         .getOne();
       item.otherUser = other?.user || null;
-    } else {
-      const group = await AppDataSource.getRepository('GroupEntity')
-        .findOne({ where: { conversationId: uc.conversationId } });
-      item.group = group || null;
-    }
+   } else {
+  const group = await AppDataSource.getRepository(GroupEntity)
+  .findOne({
+    where: { conversationId: uc.conversationId },
+    relations: { members: { user: true } },
+  });
+  item.group = group || null;
+}
     result.push(item);
   }
   return result;
