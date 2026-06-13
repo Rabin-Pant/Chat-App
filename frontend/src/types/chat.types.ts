@@ -40,6 +40,7 @@ export interface UserConversation {
   conversation: Conversation;
   otherUser?: User;
   group?: Group;
+  lastMessage?: Message | null;
 }
 
 export interface Group {

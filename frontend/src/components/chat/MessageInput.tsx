@@ -39,15 +39,15 @@ export default function MessageInput({ conversationId }: Props) {
   };
 
   return (
-    <div className="px-4 py-3 border-t border-gray-100">
-      <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-2">
+    <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2">
         <input
           type="text"
           value={content}
           onChange={(e) => { setContent(e.target.value); handleTyping(); }}
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
           placeholder="Type a message..."
-          className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+          className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
         />
         <button
           onClick={handleSend}

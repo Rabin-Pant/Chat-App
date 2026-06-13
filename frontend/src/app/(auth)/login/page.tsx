@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { authApi } from '@/services/auth.api';
 
 export default function LoginPage() {
@@ -27,16 +28,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 w-full max-w-md">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Welcome back</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to your account</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Welcome back</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Sign in to your account</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email address
             </label>
             <input
@@ -45,7 +46,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               placeholder="you@example.com"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 
@@ -61,16 +62,16 @@ export default function LoginPage() {
 
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-gray-200 dark:border-gray-600" />
             </div>
             <div className="relative flex justify-center text-xs text-gray-400">
-              <span className="bg-white px-2">or</span>
+              <span className="bg-white dark:bg-gray-800 px-2">or</span>
             </div>
           </div>
 
           <button
             onClick={authApi.googleLogin}
-            className="w-full flex items-center justify-center gap-3 border border-gray-200 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+            className="w-full flex items-center justify-center gap-3 border border-gray-200 dark:border-gray-600 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -106,12 +107,12 @@ function OtpVerifyForm({ email }: { email: string }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 w-full max-w-md">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Check your email</h1>
-          <p className="text-gray-500 mt-1 text-sm">
-            We sent a 6-digit code to <span className="font-medium text-gray-700">{email}</span>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Check your email</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+            We sent a 6-digit code to <span className="font-medium text-gray-700 dark:text-gray-300">{email}</span>
           </p>
         </div>
 
@@ -123,7 +124,7 @@ function OtpVerifyForm({ email }: { email: string }) {
             onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
             placeholder="000000"
             maxLength={6}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg text-center text-2xl font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg text-center text-2xl font-mono tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           />
 
           {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -140,5 +141,3 @@ function OtpVerifyForm({ email }: { email: string }) {
     </div>
   );
 }
-
-import { useAuth } from '@/hooks/useAuth';

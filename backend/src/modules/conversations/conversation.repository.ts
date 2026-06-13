@@ -43,6 +43,16 @@ export class ConversationRepository {
   const result = [];
   for (const uc of ucs) {
     const item: any = { ...uc };
+
+    const lastMessage = await AppDataSource.getRepository('MessageEntity')
+      .createQueryBuilder('m')
+      .where('m.conversationId = :convId', { convId: uc.conversationId })
+      .orderBy('m.createdAt', 'DESC')
+      .limit(1)
+      .getOne();
+
+    item.lastMessage = lastMessage || null;
+
     if (uc.conversation.type === 'dm') {
       const other = await this.ucRepository
         .createQueryBuilder('uc2')
@@ -51,14 +61,14 @@ export class ConversationRepository {
         .andWhere('uc2.userId != :userId', { userId })
         .getOne();
       item.otherUser = other?.user || null;
-   } else {
-  const group = await AppDataSource.getRepository(GroupEntity)
-  .findOne({
-    where: { conversationId: uc.conversationId },
-    relations: { members: { user: true } },
-  });
-  item.group = group || null;
-}
+    } else {
+      const group = await AppDataSource.getRepository(GroupEntity)
+        .findOne({
+          where: { conversationId: uc.conversationId },
+          relations: { members: { user: true } },
+        });
+      item.group = group || null;
+    }
     result.push(item);
   }
   return result;
