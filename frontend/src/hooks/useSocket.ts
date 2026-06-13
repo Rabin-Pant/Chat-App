@@ -6,7 +6,7 @@ import { usePresenceStore } from '@/store/presence.store';
 import { Message } from '@/types/chat.types';
 
 export const useSocket = (isAuthenticated: boolean) => {
-  const { addMessage, updateMessage, removeMessage, setTyping } = useChatStore();
+  const { addMessage, updateMessage, removeMessage, setTyping, setReactions } = useChatStore();
   const { addNotification, setUnreadCount } = useNotificationStore();
   const { setUserOnline, setUserOffline } = usePresenceStore();
 
@@ -37,11 +37,8 @@ export const useSocket = (isAuthenticated: boolean) => {
     });
 
     socket.on('presence:update', ({ userId, isOnline }: any) => {
-      if (isOnline) {
-        setUserOnline(userId);
-      } else {
-        setUserOffline(userId);
-      }
+      if (isOnline) setUserOnline(userId);
+      else setUserOffline(userId);
     });
 
     socket.on('notification:new', (notification: any) => {
@@ -49,10 +46,12 @@ export const useSocket = (isAuthenticated: boolean) => {
     });
 
     socket.on('unread:update', ({ unreadCounts }: any) => {
-      const total = unreadCounts.reduce(
-        (sum: number, u: any) => sum + u.count, 0
-      );
+      const total = unreadCounts.reduce((sum: number, u: any) => sum + u.count, 0);
       setUnreadCount(total);
+    });
+
+    socket.on('reaction:update', ({ messageId, reactions }: any) => {
+      setReactions(messageId, reactions);
     });
 
     return () => {
@@ -63,6 +62,7 @@ export const useSocket = (isAuthenticated: boolean) => {
       socket.off('presence:update');
       socket.off('notification:new');
       socket.off('unread:update');
+      socket.off('reaction:update');
       disconnectSocket();
     };
   }, [isAuthenticated]);

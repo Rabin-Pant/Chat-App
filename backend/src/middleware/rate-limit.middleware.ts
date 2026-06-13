@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 export const globalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   message: { message: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -10,7 +10,7 @@ export const globalRateLimit = rateLimit({
 
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 50,
   message: { message: 'Too many auth attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -18,7 +18,7 @@ export const authRateLimit = rateLimit({
 
 export const otpRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 3,
+  max: 10,
   message: { message: 'Too many OTP requests, please wait a minute' },
   standardHeaders: true,
   legacyHeaders: false,

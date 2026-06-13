@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { Message, UserConversation, Conversation } from '@/types/chat.types';
+import { Message, UserConversation } from '@/types/chat.types';
 
 interface ChatState {
   conversations: UserConversation[];
   activeConversationId: string | null;
   messages: Record<string, Message[]>;
   typingUsers: Record<string, string[]>;
+  reactions: Record<string, Record<string, { count: number; userIds: string[] }>>;
 
   setConversations: (conversations: UserConversation[]) => void;
   setActiveConversation: (id: string | null) => void;
@@ -14,14 +15,16 @@ interface ChatState {
   updateMessage: (messageId: string, data: Partial<Message>) => void;
   removeMessage: (messageId: string, conversationId: string) => void;
   setTyping: (conversationId: string, userId: string, isTyping: boolean) => void;
+  setReactions: (messageId: string, reactions: Record<string, { count: number; userIds: string[] }>) => void;
   updateConversationLastMessage: (conversationId: string) => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>((set) => ({
   conversations: [],
   activeConversationId: null,
   messages: {},
   typingUsers: {},
+  reactions: {},
 
   setConversations: (conversations) => set({ conversations }),
 
@@ -76,6 +79,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         typingUsers: { ...state.typingUsers, [conversationId]: updated },
       };
     }),
+
+  setReactions: (messageId, reactions) =>
+    set((state) => ({
+      reactions: { ...state.reactions, [messageId]: reactions },
+    })),
 
   updateConversationLastMessage: (conversationId) =>
     set((state) => ({

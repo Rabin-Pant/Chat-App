@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Message, Reaction } from '@/types/chat.types';
+import { Message } from '@/types/chat.types';
 import { messageApi } from '@/services/message.api';
 import { useChatStore } from '@/store/chat.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -21,13 +21,14 @@ const EMOJI_MAP: Record<string, string> = {
 export default function MessageBubble({ message, isOwn, conversationId }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
-  const [reactions, setReactions] = useState<Record<string, { count: number; userIds: string[] }>>({});
-  const { updateMessage, removeMessage } = useChatStore();
+  const { updateMessage, removeMessage, reactions, setReactions } = useChatStore();
   const { user } = useAuthStore();
+
+  const messageReactions = reactions[message.id] || {};
 
   useEffect(() => {
     apiClient.get(`/reactions/${message.id}`).then(({ data }) => {
-      setReactions(data.reactions || {});
+      setReactions(message.id, data.reactions || {});
     }).catch(() => {});
   }, [message.id]);
 
@@ -63,29 +64,17 @@ export default function MessageBubble({ message, isOwn, conversationId }: Props)
 
   const handleReaction = async (emoji: string) => {
     await apiClient.post(`/reactions/${message.id}`, { emoji });
-    setReactions((prev) => {
-      const updated = { ...prev };
-      const myPrevEmoji = Object.entries(updated).find(([, v]) =>
-        v.userIds.includes(user?.id || '')
-      )?.[0];
-      if (myPrevEmoji) {
-        updated[myPrevEmoji] = {
-          count: updated[myPrevEmoji].count - 1,
-          userIds: updated[myPrevEmoji].userIds.filter((id) => id !== user?.id),
-        };
-        if (updated[myPrevEmoji].count === 0) delete updated[myPrevEmoji];
-      }
-      if (!updated[emoji]) updated[emoji] = { count: 0, userIds: [] };
-      updated[emoji] = {
-        count: updated[emoji].count + 1,
-        userIds: [...updated[emoji].userIds, user?.id || ''],
-      };
-      return updated;
+    setReactions(message.id, {
+      ...messageReactions,
+      [emoji]: {
+        count: (messageReactions[emoji]?.count || 0) + 1,
+        userIds: [...(messageReactions[emoji]?.userIds || []), user?.id || ''],
+      },
     });
     setShowReactions(false);
   };
 
-  const reactionEntries = Object.entries(reactions).filter(([, v]) => v.count > 0);
+  const reactionEntries = Object.entries(messageReactions).filter(([, v]) => v.count > 0);
 
   return (
     <div
@@ -93,13 +82,11 @@ export default function MessageBubble({ message, isOwn, conversationId }: Props)
       onMouseLeave={() => { setShowMenu(false); setShowReactions(false); }}
     >
       <div className="relative max-w-xs lg:max-w-md">
-        <div
-          className={`px-4 py-2 rounded-2xl text-sm ${
-            isOwn
-              ? 'bg-blue-600 text-white rounded-br-sm'
-              : 'bg-gray-100 text-gray-900 rounded-bl-sm'
-          }`}
-        >
+        <div className={`px-4 py-2 rounded-2xl text-sm ${
+          isOwn
+            ? 'bg-blue-600 text-white rounded-br-sm'
+            : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+        }`}>
           {message.content}
         </div>
 
@@ -133,7 +120,7 @@ export default function MessageBubble({ message, isOwn, conversationId }: Props)
         <div className={`absolute top-0 ${isOwn ? 'left-0 -translate-x-full pr-1' : 'right-0 translate-x-full pl-1'} hidden group-hover:flex items-center gap-1`}>
           <button
             onClick={() => setShowReactions(!showReactions)}
-            className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"
+            className="p-1 hover:bg-gray-100 rounded-lg"
             title="React"
           >
             😊
@@ -141,7 +128,7 @@ export default function MessageBubble({ message, isOwn, conversationId }: Props)
           {isOwn && (
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"
+              className="p-1 hover:bg-gray-100 rounded-lg text-gray-400"
               title="More options"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
