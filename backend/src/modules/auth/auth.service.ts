@@ -66,18 +66,20 @@ export class AuthService {
   }
 
   async requestOtp(email: string): Promise<void> {
-    let user = await this.userRepository.findOne({ where: { email } });
+  // don't create user here anymore — just create OTP record
+  let user = await this.userRepository.findOne({ where: { email } });
 
-    if (!user) {
-      user = await this.userRepository.save({
-        email,
-        isVerified: false,
-      });
-    }
-
-    const code = await this.otpService.createOtp(user.id);
-    await this.otpService.sendOtpEmail(email, code);
+  if (!user) {
+    // create unverified placeholder
+    user = await this.userRepository.save({
+      email,
+      isVerified: false,
+    });
   }
+
+  const code = await this.otpService.createOtp(user.id);
+  await this.otpService.sendOtpEmail(email, code);
+}
 
   async verifyOtp(email: string, code: string): Promise<AuthTokens> {
     const user = await this.userRepository.findOne({ where: { email } });

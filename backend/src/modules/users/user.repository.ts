@@ -17,17 +17,19 @@ export class UserRepository {
   return this.repository.findBy({ id: In(ids) });
 }
 
-  async searchUsers(query: string, currentUserId: string): Promise<UserEntity[]> {
-    return this.repository
-      .createQueryBuilder('user')
-      .where('user.id != :currentUserId', { currentUserId })
-      .andWhere(
-        '(user.email ILIKE :query OR user.displayName ILIKE :query)',
-        { query: `%${query}%` }
-      )
-      .limit(20)
-      .getMany();
-  }
+ async searchUsers(query: string, currentUserId: string): Promise<UserEntity[]> {
+  return this.repository
+    .createQueryBuilder('user')
+    .where('user.id != :currentUserId', { currentUserId })
+    .andWhere('user.isVerified = true')
+    .andWhere('user.displayName IS NOT NULL')
+    .andWhere(
+      '(user.email ILIKE :query OR user.displayName ILIKE :query)',
+      { query: `%${query}%` }
+    )
+    .limit(20)
+    .getMany();
+}
 
   async updateUser(id: string, data: Partial<UserEntity>): Promise<UserEntity | null> {
     await this.repository.update(id, data);

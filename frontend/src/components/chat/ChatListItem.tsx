@@ -1,6 +1,7 @@
 'use client';
 import { UserConversation } from '@/types/chat.types';
 import { useChatStore } from '@/store/chat.store';
+import { usePresenceStore } from '@/store/presence.store';
 
 interface Props {
   userConversation: UserConversation;
@@ -10,6 +11,7 @@ interface Props {
 
 export default function ChatListItem({ userConversation, isActive, onClick }: Props) {
   const { messages } = useChatStore();
+  const { isOnline } = usePresenceStore();
   const convMessages = messages[userConversation.conversationId] || [];
   const lastMessage = convMessages[convMessages.length - 1];
 
@@ -26,6 +28,10 @@ export default function ChatListItem({ userConversation, isActive, onClick }: Pr
       '?'
     : '#';
 
+  const online = isDM && userConversation.otherUser
+    ? isOnline(userConversation.otherUser.id)
+    : false;
+
   return (
     <div
       onClick={onClick}
@@ -33,14 +39,21 @@ export default function ChatListItem({ userConversation, isActive, onClick }: Pr
         isActive ? 'bg-blue-50' : ''
       }`}
     >
-      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-        <span className="text-sm font-medium text-gray-600">{avatar}</span>
+      <div className="relative shrink-0">
+        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+          {avatar}
+        </div>
+        {isDM && (
+          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white ${
+            online ? 'bg-green-500' : 'bg-gray-300'
+          }`} />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
           {lastMessage && (
-            <span className="text-xs text-gray-400 shrink-0">
+            <span className="text-xs text-gray-400 shrink-0 ml-1">
               {new Date(lastMessage.createdAt).toLocaleTimeString([], {
                 hour: '2-digit', minute: '2-digit',
               })}

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { messageApi } from '@/services/message.api';
 import apiClient from '@/lib/api.client';
 import { User } from '@/types/chat.types';
+import CreateGroupModal from './CreateGroupModal';
 
 interface Props {
   onClose: () => void;
@@ -11,22 +12,18 @@ interface Props {
 
 export default function NewChatModal({ onClose }: Props) {
   const router = useRouter();
+  const [tab, setTab] = useState<'dm' | 'group'>('dm');
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async (value: string) => {
     setQuery(value);
-    if (value.length < 2) {
-      setUsers([]);
-      return;
-    }
+    if (value.length < 2) { setUsers([]); return; }
     setLoading(true);
     try {
       const { data } = await apiClient.get(`/users/search?q=${value}`);
       setUsers(data.users);
-    } catch {
-      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -42,19 +39,38 @@ export default function NewChatModal({ onClose }: Props) {
     }
   };
 
+  if (tab === ('group' as string)) {
+    return <CreateGroupModal onClose={onClose} />;
+  }
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4">
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">New conversation</h2>
-          <button
-            onClick={onClose}
-            aria-label="Close modal"
-            className="p-1 hover:bg-gray-100 rounded-lg transition"
-          >
+          <button onClick={onClose} aria-label="Close modal" className="p-1 hover:bg-gray-100 rounded-lg">
             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
+          </button>
+        </div>
+
+        <div className="flex gap-1 p-4 pb-0">
+          <button
+            onClick={() => setTab('dm')}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
+              tab === 'dm' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            Direct message
+          </button>
+          <button
+            onClick={() => setTab('group')}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
+              tab !== 'dm' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'
+            }`}
+          >
+            New group
           </button>
         </div>
 

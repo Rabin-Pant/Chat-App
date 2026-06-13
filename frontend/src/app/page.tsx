@@ -5,7 +5,7 @@ import { useAuthStore } from '@/store/auth.store';
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -15,7 +15,11 @@ export default function HomePage() {
   useEffect(() => {
     if (!mounted) return;
     if (isAuthenticated) {
-      router.push('/chat');
+      if (!user?.displayName) {
+        router.push('/setup');
+      } else {
+        router.push('/chat');
+      }
     } else {
       router.push('/login');
     }

@@ -9,7 +9,11 @@ export const useAuth = () => {
   const loginWithOtp = async (email: string, code: string) => {
     const tokens = await authApi.verifyOtp(email, code);
     setAuth(tokens.user, tokens.accessToken, tokens.refreshToken);
-    router.push('/');
+    if (!tokens.user.displayName) {
+      router.push('/setup');
+    } else {
+      router.push('/chat');
+    }
   };
 
   const logout = () => {

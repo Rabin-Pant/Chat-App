@@ -23,7 +23,11 @@ export default function CallbackPage() {
 
     apiClient.get('/users/me').then(({ data }) => {
       setAuth(data.user, accessToken, refreshToken);
-      router.push('/');
+      if (!data.user.displayName) {
+        router.push('/setup');
+      } else {
+        router.push('/chat');
+      }
     }).catch(() => {
       router.push('/login');
     });
