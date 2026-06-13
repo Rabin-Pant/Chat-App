@@ -31,14 +31,34 @@ export class ConversationRepository {
   }
 
   async getUserConversations(userId: string): Promise<any[]> {
-    return this.ucRepository
-      .createQueryBuilder('uc')
-      .innerJoinAndSelect('uc.conversation', 'c')
-      .where('uc.userId = :userId', { userId })
-      .andWhere('uc.isArchived = false')
-      .orderBy('c.updatedAt', 'DESC')
-      .getMany();
+  const ucs = await this.ucRepository
+    .createQueryBuilder('uc')
+    .innerJoinAndSelect('uc.conversation', 'c')
+    .where('uc.userId = :userId', { userId })
+    .andWhere('uc.isArchived = false')
+    .orderBy('c.updatedAt', 'DESC')
+    .getMany();
+
+  const result = [];
+  for (const uc of ucs) {
+    const item: any = { ...uc };
+    if (uc.conversation.type === 'dm') {
+      const other = await this.ucRepository
+        .createQueryBuilder('uc2')
+        .innerJoinAndSelect('uc2.user', 'u')
+        .where('uc2.conversationId = :convId', { convId: uc.conversationId })
+        .andWhere('uc2.userId != :userId', { userId })
+        .getOne();
+      item.otherUser = other?.user || null;
+    } else {
+      const group = await AppDataSource.getRepository('GroupEntity')
+        .findOne({ where: { conversationId: uc.conversationId } });
+      item.group = group || null;
+    }
+    result.push(item);
   }
+  return result;
+}
 
   async findUserConversation(userId: string, conversationId: string): Promise<UserConversationEntity | null> {
     return this.ucRepository.findOne({ where: { userId, conversationId } });

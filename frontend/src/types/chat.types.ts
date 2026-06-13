@@ -38,6 +38,8 @@ export interface UserConversation {
   isArchived: boolean;
   lastReadAt: string | null;
   conversation: Conversation;
+  otherUser?: User;
+  group?: Group;
 }
 
 export interface Group {

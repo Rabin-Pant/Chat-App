@@ -7,18 +7,18 @@ export class AuthController {
   private tokenService = new TokenService();
 
   googleCallback = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const user = req.user as any;
-      const tokens = this.authService.generateTokens(user);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  try {
+    const user = req.user as any;
+    const tokens = this.authService.generateTokens(user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-      res.redirect(
-        `${frontendUrl}/auth/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`
-      );
-    } catch (error) {
-      res.redirect(`${process.env.FRONTEND_URL}/auth/error`);
-    }
-  };
+    res.redirect(
+      `${frontendUrl}/callback?accessToken=${tokens.accessToken}&refreshToken=${tokens.refreshToken}`
+    );
+  } catch (error) {
+    res.redirect(`${process.env.FRONTEND_URL}/login`);
+  }
+};
 
   requestOtp = async (req: Request, res: Response): Promise<void> => {
     try {
