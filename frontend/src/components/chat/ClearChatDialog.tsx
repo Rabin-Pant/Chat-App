@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { messageApi } from '@/services/message.api';
 import { useChatStore } from '@/store/chat.store';
 
@@ -10,13 +11,18 @@ interface Props {
 
 export default function ClearChatDialog({ conversationId, onClose }: Props) {
   const [loading, setLoading] = useState(false);
-  const { setMessages } = useChatStore();
+  const router = useRouter();
+  const { setMessages, setConversations, conversations } = useChatStore();
 
   const handleClear = async () => {
     setLoading(true);
     try {
       await messageApi.clearConversation(conversationId);
       setMessages(conversationId, []);
+      setConversations(
+        conversations.filter((c) => c.conversationId !== conversationId)
+      );
+      router.push('/chat');
       onClose();
     } catch (err) {
       console.error(err);

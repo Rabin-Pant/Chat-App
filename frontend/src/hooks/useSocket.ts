@@ -5,7 +5,7 @@ import { useNotificationStore } from '@/store/notification.store';
 import { usePresenceStore } from '@/store/presence.store';
 
 export const useSocket = (isAuthenticated: boolean) => {
-  const { setTyping, setReactions } = useChatStore();
+  const { setTyping, setReactions, addMessage } = useChatStore();
   const { addNotification, setUnreadCount } = useNotificationStore();
   const { setUserOnline, setUserOffline } = usePresenceStore();
 
@@ -14,6 +14,10 @@ export const useSocket = (isAuthenticated: boolean) => {
 
     connectSocket();
     const socket = getSocket();
+
+    socket.on('message:receive', (message: any) => {
+      addMessage(message);
+    });
 
     socket.on('typing:start', ({ userId, conversationId }: any) => {
       setTyping(conversationId, userId, true);
@@ -44,6 +48,7 @@ export const useSocket = (isAuthenticated: boolean) => {
     });
 
     return () => {
+      socket.off('message:receive');
       socket.off('typing:start');
       socket.off('typing:stop');
       socket.off('presence:update');

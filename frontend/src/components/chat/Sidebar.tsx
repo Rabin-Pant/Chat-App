@@ -21,19 +21,23 @@ export default function Sidebar() {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
 
-  useEffect(() => {
-    messageApi.getConversations().then((data) => {
-      setConversations(data);
-    }).finally(() => setLoading(false));
+ useEffect(() => {
+  messageApi.getConversations().then((data) => {
+    const sorted = [...data].sort((a, b) =>
+      new Date(b.conversation.updatedAt).getTime() -
+      new Date(a.conversation.updatedAt).getTime()
+    );
+    setConversations(sorted);
+  }).finally(() => setLoading(false));
 
-    apiClient.get('/notifications').then(({ data }) => {
-      setNotifications(data.notifications);
-    });
+  apiClient.get('/notifications').then(({ data }) => {
+    setNotifications(data.notifications);
+  });
 
-    apiClient.get('/notifications/unread-count').then(({ data }) => {
-      setUnreadCount(data.count);
-    });
-  }, []);
+  apiClient.get('/notifications/unread-count').then(({ data }) => {
+    setUnreadCount(data.count);
+  });
+}, []);
 
   const handleLogout = () => {
     clearAuth();

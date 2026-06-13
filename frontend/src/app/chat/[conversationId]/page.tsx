@@ -58,10 +58,10 @@ export default function ConversationPage() {
     }
 
     const handleNewMessage = (message: any) => {
-      if (message.conversationId === conversationId) {
-        addMessage(message);
-      }
-    };
+  if (message.conversationId === conversationId) {
+    addMessage(message);
+  }
+};
 
     const handleMessageDeleted = ({ messageId, type }: any) => {
       if (type === 'hard') {

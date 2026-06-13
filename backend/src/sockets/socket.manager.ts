@@ -1,8 +1,11 @@
+import 'reflect-metadata';
 import { Server as HttpServer } from 'http';
 import { Server as SocketServer, Socket } from 'socket.io';
 import { ENV } from '../config/env';
 import { TokenService } from '../modules/auth/token.service';
 import { PresenceService } from '../modules/presence/presence.service';
+import { UserConversationEntity } from '../modules/conversations/user-conversation.entity';
+import { AppDataSource } from '../config/database';
 
 const tokenService = new TokenService();
 const presenceService = new PresenceService();
@@ -49,41 +52,52 @@ export class SocketManager {
   };
 
   private handleConnection = async (socket: Socket): Promise<void> => {
-    const userId = socket.data.userId as string;
-    console.log(`🔌 User connected: ${userId}`);
+  const userId = socket.data.userId as string;
+  console.log(`🔌 User connected: ${userId}`);
 
-    socket.join(`user:${userId}`);
-    await presenceService.setOnline(userId);
-    socket.broadcast.emit('presence:update', { userId, isOnline: true });
+  socket.join(`user:${userId}`);
+  await presenceService.setOnline(userId);
+  socket.broadcast.emit('presence:update', { userId, isOnline: true });
 
-    socket.on('join:conversation', (conversationId: string) => {
-      socket.join(`conversation:${conversationId}`);
+  try {
+    const { AppDataSource } = await import('../config/database');
+   const ucRepo = AppDataSource.getRepository(UserConversationEntity);
+const userConvs = await ucRepo.find({ where: { userId } });
+for (const uc of userConvs) {
+  socket.join(`conversation:${uc.conversationId}`);
+}
+  } catch (err) {
+    console.error('Failed to join conversation rooms:', err);
+  }
+
+  socket.on('join:conversation', (conversationId: string) => {
+    socket.join(`conversation:${conversationId}`);
+  });
+
+  socket.on('leave:conversation', (conversationId: string) => {
+    socket.leave(`conversation:${conversationId}`);
+  });
+
+  socket.on('typing:start', (conversationId: string) => {
+    socket.to(`conversation:${conversationId}`).emit('typing:start', {
+      userId,
+      conversationId,
     });
+  });
 
-    socket.on('leave:conversation', (conversationId: string) => {
-      socket.leave(`conversation:${conversationId}`);
+  socket.on('typing:stop', (conversationId: string) => {
+    socket.to(`conversation:${conversationId}`).emit('typing:stop', {
+      userId,
+      conversationId,
     });
+  });
 
-    socket.on('typing:start', (conversationId: string) => {
-      socket.to(`conversation:${conversationId}`).emit('typing:start', {
-        userId,
-        conversationId,
-      });
-    });
-
-    socket.on('typing:stop', (conversationId: string) => {
-      socket.to(`conversation:${conversationId}`).emit('typing:stop', {
-        userId,
-        conversationId,
-      });
-    });
-
-    socket.on('disconnect', async () => {
-      console.log(`🔌 User disconnected: ${userId}`);
-      await presenceService.setOffline(userId);
-      socket.broadcast.emit('presence:update', { userId, isOnline: false });
-    });
-  };
+  socket.on('disconnect', async () => {
+    console.log(`🔌 User disconnected: ${userId}`);
+    await presenceService.setOffline(userId);
+    socket.broadcast.emit('presence:update', { userId, isOnline: false });
+  });
+};
 
   public emitToConversation(conversationId: string, event: string, data: any): void {
     this.io.to(`conversation:${conversationId}`).emit(event, data);

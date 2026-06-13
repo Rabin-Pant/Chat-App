@@ -23,10 +23,6 @@ export class ChatGateway {
       message
     );
 
-    const sender = await AppDataSource.getRepository(UserEntity).findOne({
-  where: { id: message.senderId }
-});
-
     const memberIds = await this.conversationRepository.getConversationMemberIds(
       message.conversationId
     );
@@ -37,26 +33,26 @@ export class ChatGateway {
       memberIds
     );
 
+    const sender = await AppDataSource.getRepository(UserEntity).findOne({
+      where: { id: message.senderId },
+    });
+
     for (const memberId of memberIds) {
       if (memberId === message.senderId) continue;
 
-      await this.notificationService.createNotification(
-  memberId,
-  NotificationType.NEW_MESSAGE,
-  {
-    messageId: message.id,
-    conversationId: message.conversationId,
-    senderId: message.senderId,
-    senderName: sender?.displayName || sender?.email || 'Someone',
-    preview: message.content?.substring(0, 50),
-  }
-);
+      const notification = await this.notificationService.createNotification(
+        memberId,
+        NotificationType.NEW_MESSAGE,
+        {
+          messageId: message.id,
+          conversationId: message.conversationId,
+          senderId: message.senderId,
+          senderName: sender?.displayName || sender?.email || 'Someone',
+          preview: message.content?.substring(0, 50),
+        }
+      );
 
-      this.socketManager.emitToUser(memberId, 'notification:new', {
-        type: NotificationType.NEW_MESSAGE,
-        conversationId: message.conversationId,
-        senderId: message.senderId,
-      });
+      this.socketManager.emitToUser(memberId, 'notification:new', notification);
 
       const unreadCounts = await this.unreadService.getUnreadCounts(memberId);
       this.socketManager.emitToUser(memberId, 'unread:update', { unreadCounts });
