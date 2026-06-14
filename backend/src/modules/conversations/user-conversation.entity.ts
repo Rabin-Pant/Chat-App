@@ -28,6 +28,9 @@ export class UserConversationEntity {
   clearedAt: Date;
 
   @Column({ default: false })
+  isHidden: boolean;
+
+  @Column({ default: false })
   isMuted: boolean;
 
   @Column({ default: false })

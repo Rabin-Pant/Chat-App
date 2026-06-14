@@ -16,48 +16,56 @@ export class ChatGateway {
     return SocketManager.getInstance();
   }
 
-  async onNewMessage(message: MessageEntity): Promise<void> {
-    this.socketManager.emitToConversation(
-      message.conversationId,
-      'message:receive',
-      message
-    );
+async onNewMessage(message: MessageEntity): Promise<void> {
+  this.socketManager.emitToConversation(
+    message.conversationId,
+    'message:receive',
+    message
+  );
 
-    const memberIds = await this.conversationRepository.getConversationMemberIds(
+  const memberIds = await this.conversationRepository.getConversationMemberIds(
+    message.conversationId
+  );
+
+  await this.unreadService.incrementUnread(
+    message.conversationId,
+    message.senderId,
+    memberIds
+  );
+
+  const sender = await AppDataSource.getRepository(UserEntity).findOne({
+    where: { id: message.senderId },
+  });
+
+  for (const memberId of memberIds) {
+    if (memberId === message.senderId) continue;
+
+    await this.conversationRepository.unhideConversationForUser(
+      memberId,
       message.conversationId
     );
+    this.socketManager.emitToUser(memberId, 'conversation:show', {
+  conversationId: message.conversationId,
+});
 
-    await this.unreadService.incrementUnread(
-      message.conversationId,
-      message.senderId,
-      memberIds
+    const notification = await this.notificationService.createNotification(
+      memberId,
+      NotificationType.NEW_MESSAGE,
+      {
+        messageId: message.id,
+        conversationId: message.conversationId,
+        senderId: message.senderId,
+        senderName: sender?.displayName || sender?.email || 'Someone',
+        preview: message.content?.substring(0, 50),
+      }
     );
 
-    const sender = await AppDataSource.getRepository(UserEntity).findOne({
-      where: { id: message.senderId },
-    });
+    this.socketManager.emitToUser(memberId, 'notification:new', notification);
 
-    for (const memberId of memberIds) {
-      if (memberId === message.senderId) continue;
-
-      const notification = await this.notificationService.createNotification(
-        memberId,
-        NotificationType.NEW_MESSAGE,
-        {
-          messageId: message.id,
-          conversationId: message.conversationId,
-          senderId: message.senderId,
-          senderName: sender?.displayName || sender?.email || 'Someone',
-          preview: message.content?.substring(0, 50),
-        }
-      );
-
-      this.socketManager.emitToUser(memberId, 'notification:new', notification);
-
-      const unreadCounts = await this.unreadService.getUnreadCounts(memberId);
-      this.socketManager.emitToUser(memberId, 'unread:update', { unreadCounts });
-    }
+    const unreadCounts = await this.unreadService.getUnreadCounts(memberId);
+    this.socketManager.emitToUser(memberId, 'unread:update', { unreadCounts });
   }
+}
 
   async onMessageDeleted(
     messageId: string,

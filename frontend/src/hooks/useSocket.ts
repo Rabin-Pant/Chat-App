@@ -3,9 +3,10 @@ import { getSocket, connectSocket, disconnectSocket } from '@/lib/socket';
 import { useChatStore } from '@/store/chat.store';
 import { useNotificationStore } from '@/store/notification.store';
 import { usePresenceStore } from '@/store/presence.store';
+import { messageApi } from '@/services/message.api';
 
 export const useSocket = (isAuthenticated: boolean) => {
-  const { setTyping, setReactions, addMessage } = useChatStore();
+  const { setTyping, setReactions, addMessage, setConversations } = useChatStore();
   const { addNotification, setUnreadCount } = useNotificationStore();
   const { setUserOnline, setUserOffline } = usePresenceStore();
 
@@ -17,6 +18,15 @@ export const useSocket = (isAuthenticated: boolean) => {
 
     socket.on('message:receive', (message: any) => {
       addMessage(message);
+    });
+
+    socket.on('conversation:show', async () => {
+      const conversations = await messageApi.getConversations();
+      const sorted = [...conversations].sort((a, b) =>
+        new Date(b.conversation.updatedAt).getTime() -
+        new Date(a.conversation.updatedAt).getTime()
+      );
+      setConversations(sorted);
     });
 
     socket.on('typing:start', ({ userId, conversationId }: any) => {
@@ -49,6 +59,7 @@ export const useSocket = (isAuthenticated: boolean) => {
 
     return () => {
       socket.off('message:receive');
+      socket.off('conversation:show');
       socket.off('typing:start');
       socket.off('typing:stop');
       socket.off('presence:update');

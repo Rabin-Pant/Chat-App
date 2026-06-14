@@ -37,6 +37,7 @@ export class ConversationRepository {
     .innerJoinAndSelect('uc.conversation', 'c')
     .where('uc.userId = :userId', { userId })
     .andWhere('uc.isArchived = false')
+    .andWhere('uc.isHidden = false')
     .orderBy('c.updatedAt', 'DESC')
     .getMany();
 
@@ -79,11 +80,11 @@ export class ConversationRepository {
   }
 
   async clearConversationForUser(userId: string, conversationId: string): Promise<void> {
-    await this.ucRepository.update(
-      { userId, conversationId },
-      { clearedAt: new Date() }
-    );
-  }
+  await this.ucRepository.update(
+    { userId, conversationId },
+    { clearedAt: new Date(), isHidden: true }
+  );
+}
 
   async isUserInConversation(userId: string, conversationId: string): Promise<boolean> {
     const uc = await this.ucRepository.findOne({ where: { userId, conversationId } });
@@ -96,5 +97,12 @@ export class ConversationRepository {
     select: { userId: true },
   });
   return members.map((m) => m.userId);
+}
+
+async unhideConversationForUser(userId: string, conversationId: string): Promise<void> {
+  await this.ucRepository.update(
+    { userId, conversationId },
+    { isHidden: false }
+  );
 }
 }

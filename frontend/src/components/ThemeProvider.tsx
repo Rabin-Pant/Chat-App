@@ -6,10 +6,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   const { isDark } = useThemeStore();
 
   useEffect(() => {
+    const root = document.documentElement;
     if (isDark) {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
   }, [isDark]);
 

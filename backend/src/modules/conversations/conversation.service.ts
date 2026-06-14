@@ -29,4 +29,7 @@ export class ConversationService {
   async isUserInConversation(userId: string, conversationId: string): Promise<boolean> {
     return this.conversationRepository.isUserInConversation(userId, conversationId);
   }
+  async unhideConversation(userId: string, conversationId: string): Promise<void> {
+  await this.conversationRepository.unhideConversationForUser(userId, conversationId);
+}
 }
