@@ -38,16 +38,20 @@ export default function NewChatModal({ onClose }: Props) {
   };
 
   const handleStartDM = async (userId: string) => {
-    try {
-      const conversation = await messageApi.startDM(userId);
-      const updated = await messageApi.getConversations();
-      setConversations(updated);
-      router.push(`/chat/${conversation.id}`);
-      onClose();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    const conversation = await messageApi.startDM(userId);
+    const updated = await messageApi.getConversations();
+    const sorted = [...updated].sort((a, b) =>
+      new Date(b.conversation.updatedAt).getTime() -
+      new Date(a.conversation.updatedAt).getTime()
+    );
+    setConversations(sorted);
+    router.push(`/chat/${conversation.id}`);
+    onClose();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const handleOpenGroup = async (group: Group) => {
     try {

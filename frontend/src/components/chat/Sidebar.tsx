@@ -62,21 +62,30 @@ export default function Sidebar() {
       <div className="p-4 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div
-            className="flex items-center gap-3 cursor-pointer"
-            onClick={() => { setEditingName(true); setNewName(user?.displayName || ''); }}
-          >
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm shrink-0">
-              {user?.displayName?.[0] || user?.email?.[0]?.toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">
-                {user?.displayName || user?.email}
-              </p>
-              {!user?.displayName && (
-                <p className="text-xs text-blue-500">Click to set name</p>
-              )}
-            </div>
-          </div>
+  className="flex items-center gap-3 cursor-pointer"
+  onClick={() => router.push('/profile')}
+>
+  {user?.avatarUrl ? (
+   <img
+  src={user.avatarUrl}
+  alt="Avatar"
+  crossOrigin="anonymous"
+  className="w-8 h-8 rounded-full object-cover shrink-0"
+/>
+  ) : (
+    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm shrink-0">
+      {user?.displayName?.[0] || user?.email?.[0]?.toUpperCase()}
+    </div>
+  )}
+  <div className="min-w-0">
+    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[100px]">
+      {user?.displayName || user?.email}
+    </p>
+    {!user?.displayName && (
+      <p className="text-xs text-blue-500">Set up profile</p>
+    )}
+  </div>
+</div>
 
           <div className="flex items-center gap-1">
             <button

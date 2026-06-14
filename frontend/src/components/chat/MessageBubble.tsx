@@ -82,14 +82,24 @@ export default function MessageBubble({ message, isOwn, conversationId }: Props)
       onMouseLeave={() => { setShowMenu(false); setShowReactions(false); }}
     >
       <div className="relative max-w-xs lg:max-w-md">
-        <div className={`px-4 py-2 rounded-2xl text-sm ${
-          isOwn
-            ? 'bg-blue-600 text-white rounded-br-sm'
-            : 'bg-gray-100 text-gray-900 rounded-bl-sm'
-        }`}>
-          {message.content}
-        </div>
-
+       {message.type === 'image' ? (
+  <div className={`rounded-2xl overflow-hidden ${isOwn ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
+    <img
+      src={message.content || ''}
+      alt="Image"
+      className="max-w-xs max-h-64 object-cover cursor-pointer"
+      onClick={() => window.open(message.content || '', '_blank')}
+    />
+  </div>
+) : (
+  <div className={`px-4 py-2 rounded-2xl text-sm ${
+    isOwn
+      ? 'bg-blue-600 text-white rounded-br-sm'
+      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-sm'
+  }`}>
+    {message.content}
+  </div>
+)}
         {reactionEntries.length > 0 && (
           <div className={`flex gap-1 mt-1 flex-wrap ${isOwn ? 'justify-end' : 'justify-start'}`}>
             {reactionEntries.map(([emoji, data]) => (

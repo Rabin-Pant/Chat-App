@@ -122,15 +122,24 @@ export default function ConversationPage() {
     </button>
   <div className="flex items-center gap-3">
     <div className="relative">
-      <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm">
-        {headerAvatar}
-      </div>
-      {otherUser && (
-        <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${
-          online ? 'bg-green-500' : 'bg-gray-300'
-        }`} />
-      )}
+  {otherUser?.avatarUrl ? (
+    <img
+      src={otherUser.avatarUrl}
+      alt="Avatar"
+      crossOrigin="anonymous"
+      className="w-9 h-9 rounded-full object-cover"
+    />
+  ) : (
+    <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm">
+      {headerAvatar}
     </div>
+  )}
+  {otherUser && (
+    <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-gray-900 ${
+      online ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+    }`} />
+  )}
+</div>
     <div
       className={group ? 'cursor-pointer' : ''}
       onClick={() => group && router.push(`/chat/${conversationId}/group`)}
