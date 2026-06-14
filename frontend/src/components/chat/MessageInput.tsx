@@ -4,12 +4,15 @@ import { messageApi } from '@/services/message.api';
 import { useChatStore } from '@/store/chat.store';
 import { getSocket } from '@/lib/socket';
 import apiClient from '@/lib/api.client';
+import { Message } from '@/types/chat.types';
 
 interface Props {
   conversationId: string;
+  replyTo?: Message | null;
+  onCancelReply?: () => void;
 }
 
-export default function MessageInput({ conversationId }: Props) {
+export default function MessageInput({ conversationId, replyTo, onCancelReply }: Props) {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -30,9 +33,14 @@ export default function MessageInput({ conversationId }: Props) {
     if (!content.trim() || sending) return;
     setSending(true);
     try {
-      const message = await messageApi.sendMessage(conversationId, content.trim());
+      const message = await messageApi.sendMessage(
+        conversationId,
+        content.trim(),
+        replyTo?.id
+      );
       addMessage(message);
       setContent('');
+      if (onCancelReply) onCancelReply();
       socket.emit('typing:stop', conversationId);
     } catch (err) {
       console.error(err);
@@ -53,9 +61,10 @@ export default function MessageInput({ conversationId }: Props) {
       });
       const message = await apiClient.post(
         `/chat/conversations/${conversationId}/messages`,
-        { content: data.url, type: 'image' }
+        { content: data.url, type: 'image', replyToId: replyTo?.id }
       );
       addMessage(message.data.message);
+      if (onCancelReply) onCancelReply();
     } catch (err) {
       console.error(err);
     } finally {
@@ -65,49 +74,72 @@ export default function MessageInput({ conversationId }: Props) {
   };
 
   return (
-    <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
-      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2">
-       <input
-  ref={fileInputRef}
-  type="file"
-  accept="image/*"
-  onChange={handleImageUpload}
-  aria-label="Upload image"
-  className="hidden"
-/>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          aria-label="Upload image"
-          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition shrink-0 disabled:opacity-40"
-        >
-          {uploading ? (
-            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+    <div className="border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
+      {replyTo && (
+        <div className="px-4 pt-3 pb-1 flex items-start gap-2">
+          <div className="flex-1 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 border-l-4 border-blue-500">
+            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mb-0.5">
+              {replyTo.sender?.displayName || replyTo.sender?.email || 'User'}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {replyTo.type === 'image' ? '📷 Photo' : replyTo.content}
+            </p>
+          </div>
+          <button
+            onClick={onCancelReply}
+            aria-label="Cancel reply"
+            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg mt-1 shrink-0"
+          >
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          )}
-        </button>
+          </button>
+        </div>
+      )}
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            aria-label="Upload image"
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            aria-label="Upload image"
+            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition shrink-0 disabled:opacity-40"
+          >
+            {uploading ? (
+              <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <svg className="w-5 h-5 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            )}
+          </button>
 
-        <input
-          type="text"
-          value={content}
-          onChange={(e) => { setContent(e.target.value); handleTyping(); }}
-          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-          placeholder="Type a message..."
-          className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
-        />
-        <button
-          onClick={handleSend}
-          disabled={!content.trim() || sending}
-          aria-label="Send message"
-          className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 transition shrink-0"
-        >
-          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-        </button>
+          <input
+            type="text"
+            value={content}
+            onChange={(e) => { setContent(e.target.value); handleTyping(); }}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+            placeholder="Type a message..."
+            className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!content.trim() || sending}
+            aria-label="Send message"
+            className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center disabled:opacity-40 hover:bg-blue-700 transition shrink-0"
+          >
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

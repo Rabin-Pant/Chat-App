@@ -17,6 +17,9 @@ export interface Message {
   type: 'text' | 'image' | 'file' | 'deleted' | 'unsent';
   status: 'sent' | 'delivered' | 'read';
   deletedForUsers: string[];
+  readByUsers: string[];
+  replyToId: string | null;
+  replyTo?: Message | null;
   createdAt: string;
   updatedAt: string;
   sender?: User;

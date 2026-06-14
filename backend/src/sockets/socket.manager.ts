@@ -78,6 +78,13 @@ for (const uc of userConvs) {
     socket.leave(`conversation:${conversationId}`);
   });
 
+  socket.on('message:read', async (conversationId: string) => {
+  socket.to(`conversation:${conversationId}`).emit('message:read', {
+    conversationId,
+    userId,
+  });
+});
+
   socket.on('typing:start', (conversationId: string) => {
     socket.to(`conversation:${conversationId}`).emit('typing:start', {
       userId,

@@ -6,7 +6,7 @@ import { usePresenceStore } from '@/store/presence.store';
 import { messageApi } from '@/services/message.api';
 
 export const useSocket = (isAuthenticated: boolean) => {
-  const { setTyping, setReactions, addMessage, setConversations } = useChatStore();
+  const { setTyping, setReactions, addMessage, setConversations, conversations } = useChatStore();
   const { addNotification, setUnreadCount } = useNotificationStore();
   const { setUserOnline, setUserOffline } = usePresenceStore();
 
@@ -16,8 +16,24 @@ export const useSocket = (isAuthenticated: boolean) => {
     connectSocket();
     const socket = getSocket();
 
-    socket.on('message:receive', (message: any) => {
+    socket.on('message:receive', async (message: any) => {
       addMessage(message);
+      const convIndex = conversations.findIndex(
+        (c) => c.conversationId === message.conversationId
+      );
+      if (convIndex > 0) {
+        const updated = [...conversations];
+        const [conv] = updated.splice(convIndex, 1);
+        updated.unshift(conv);
+        setConversations(updated);
+      } else if (convIndex === -1) {
+        const fresh = await messageApi.getConversations();
+        const sorted = [...fresh].sort((a, b) =>
+          new Date(b.conversation.updatedAt).getTime() -
+          new Date(a.conversation.updatedAt).getTime()
+        );
+        setConversations(sorted);
+      }
     });
 
     socket.on('conversation:show', async () => {
@@ -68,5 +84,5 @@ export const useSocket = (isAuthenticated: boolean) => {
       socket.off('reaction:update');
       disconnectSocket();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, conversations]);
 };

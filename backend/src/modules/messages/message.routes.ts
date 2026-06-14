@@ -3,6 +3,7 @@ import { MessageController } from './message.controller';
 import { authMiddleware } from '../../middleware/auth.middleware';
 import { ConversationService } from '../conversations/conversation.service';
 import { UserEntity } from '../users/user.entity';
+import { MessageService } from './message.service';
 
 const router = Router();
 const messageController = new MessageController();
@@ -18,6 +19,14 @@ router.put('/conversations/:conversationId/unhide', async (req: Request, res: Re
   const convService = new ConversationService();
   await convService.unhideConversation(user.id, conversationId);
   res.json({ message: 'Conversation unhidden' });
+});
+
+router.put('/conversations/:conversationId/read', async (req: Request, res: Response) => {
+  const user = req.user as UserEntity;
+  const conversationId = req.params.conversationId as string;
+  const msgService = new MessageService();
+  await msgService.markConversationAsRead(conversationId, user.id);
+  res.json({ message: 'Marked as read' });
 });
 router.get('/conversations/:conversationId/messages', messageController.getMessages);
 router.post('/conversations/:conversationId/messages', messageController.sendMessage);

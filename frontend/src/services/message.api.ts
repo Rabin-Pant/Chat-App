@@ -26,13 +26,17 @@ export const messageApi = {
     return data.messages;
   },
 
-  sendMessage: async (conversationId: string, content: string): Promise<Message> => {
-    const { data } = await apiClient.post(
-      `/chat/conversations/${conversationId}/messages`,
-      { content }
-    );
-    return data.message;
-  },
+  sendMessage: async (
+  conversationId: string,
+  content: string,
+  replyToId?: string
+): Promise<Message> => {
+  const { data } = await apiClient.post(
+    `/chat/conversations/${conversationId}/messages`,
+    { content, replyToId }
+  );
+  return data.message;
+},
 
   softDelete: async (messageId: string): Promise<void> => {
     await apiClient.delete(`/chat/messages/${messageId}/soft`);

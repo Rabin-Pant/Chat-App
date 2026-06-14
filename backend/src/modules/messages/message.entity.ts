@@ -26,7 +26,7 @@ export class MessageEntity {
   sender: UserEntity;
 
   @Column({ nullable: true, type: 'text' })
-content: string | null;
+  content: string | null;
 
   @Column({ type: 'enum', enum: MessageType, default: MessageType.TEXT })
   type: MessageType;
@@ -34,8 +34,18 @@ content: string | null;
   @Column({ type: 'enum', enum: MessageStatus, default: MessageStatus.SENT })
   status: MessageStatus;
 
- @Column({ type: 'simple-array', nullable: true })
+ @Column({ name: 'deletedForUsers', type: 'simple-array', nullable: true })
 deletedForUsers: string[];
+
+ @Column({ name: 'readByUsers', type: 'simple-array', nullable: true })
+readByUsers: string[];
+
+  @Column({ nullable: true })
+  replyToId: string | null;
+
+  @ManyToOne(() => MessageEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'replyToId' })
+  replyTo: MessageEntity | null;
 
   @CreateDateColumn()
   createdAt: Date;

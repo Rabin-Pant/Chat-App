@@ -3,6 +3,7 @@ import { ConversationEntity } from './conversation.entity';
 import { UserConversationEntity } from './user-conversation.entity';
 import { ConversationType } from '../../common/types';
 import { GroupEntity } from '../groups/group.entity';
+import { MessageEntity } from '../messages/message.entity';
 
 export class ConversationRepository {
   private repository = AppDataSource.getRepository(ConversationEntity);
@@ -45,12 +46,19 @@ export class ConversationRepository {
   for (const uc of ucs) {
     const item: any = { ...uc };
 
-    const lastMessage = await AppDataSource.getRepository('MessageEntity')
-      .createQueryBuilder('m')
-      .where('m.conversationId = :convId', { convId: uc.conversationId })
-      .orderBy('m.createdAt', 'DESC')
-      .limit(1)
-      .getOne();
+   const lastMessage = await AppDataSource.getRepository(MessageEntity)
+  .createQueryBuilder('m')
+  .select([
+    'm.id',
+    'm.content',
+    'm.type',
+    'm.createdAt',
+    'm.senderId',
+  ])
+  .where('m.conversationId = :convId', { convId: uc.conversationId })
+  .orderBy('m.createdAt', 'DESC')
+  .limit(1)
+  .getOne();
 
     item.lastMessage = lastMessage || null;
 

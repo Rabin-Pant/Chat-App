@@ -10,26 +10,31 @@ export class MessageService {
   private chatGateway = new ChatGateway();
 
   async sendMessage(
-    conversationId: string,
-    senderId: string,
-    content: string,
-    type: MessageType = MessageType.TEXT
-  ): Promise<MessageEntity> {
-    const isMember = await this.conversationRepository.isUserInConversation(senderId, conversationId);
-    if (!isMember) throw new Error('Not a member of this conversation');
+  conversationId: string,
+  senderId: string,
+  content: string,
+  type: MessageType = MessageType.TEXT,
+  replyToId?: string
+): Promise<MessageEntity> {
+  const isMember = await this.conversationRepository.isUserInConversation(
+    senderId, conversationId
+  );
+  if (!isMember) throw new Error('Not a member of this conversation');
 
-    const message = await this.messageRepository.createMessage({
-      conversationId,
-      senderId,
-      content,
-      type,
-      status: MessageStatus.SENT,
-      deletedForUsers: [],
-    });
+  const message = await this.messageRepository.createMessage({
+    conversationId,
+    senderId,
+    content,
+    type,
+    status: MessageStatus.SENT,
+    deletedForUsers: [],
+    readByUsers: [],
+    replyToId: replyToId || null,
+  });
 
-    await this.chatGateway.onNewMessage(message);
-    return message;
-  }
+  await this.chatGateway.onNewMessage(message);
+  return message;
+}
 
   async getMessages(
     conversationId: string,
@@ -54,6 +59,10 @@ export class MessageService {
     if (!message) throw new Error('Message not found');
     await this.messageRepository.softDeleteForUser(messageId, userId);
   }
+
+  async markConversationAsRead(conversationId: string, userId: string): Promise<void> {
+  await this.messageRepository.markAsRead(conversationId, userId);
+}
 
   async hardDelete(messageId: string, userId: string): Promise<MessageEntity> {
     const message = await this.messageRepository.findById(messageId);
