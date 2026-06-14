@@ -111,6 +111,15 @@ export default function ConversationPage() {
   return (
 <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-900 shrink-0">
+   <button
+      onClick={() => router.push('/chat')}
+      className="md:hidden p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+      aria-label="Back"
+    >
+      <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
   <div className="flex items-center gap-3">
     <div className="relative">
       <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm">
