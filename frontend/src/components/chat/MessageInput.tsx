@@ -10,9 +10,10 @@ interface Props {
   conversationId: string;
   replyTo?: Message | null;
   onCancelReply?: () => void;
+  disabled?: boolean;
 }
 
-export default function MessageInput({ conversationId, replyTo, onCancelReply }: Props) {
+export default function MessageInput({ conversationId, replyTo, onCancelReply, disabled }: Props) {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -97,7 +98,9 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply }:
         </div>
       )}
       <div className="px-4 py-3">
-        <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2">
+      <div className={`flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2 ${
+  disabled ? 'opacity-50 pointer-events-none' : ''
+}`}>
           <input
             ref={fileInputRef}
             type="file"

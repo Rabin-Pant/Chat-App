@@ -1,18 +1,28 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
+import { useBlockStore } from '@/store/block.store';
+import { blockApi } from '@/services/block.api';
 import apiClient from '@/lib/api.client';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, updateUser } = useAuthStore();
+  const { removeBlock } = useBlockStore();
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    blockApi.getBlockedUsers().then((data) => {
+      setBlockedUsers(data);
+    });
+  }, []);
 
   const handleSave = async () => {
     if (!displayName.trim()) return;
@@ -20,7 +30,7 @@ export default function ProfilePage() {
     setError('');
     setSuccess('');
     try {
-      const { data } = await apiClient.put('/users/me', {
+      await apiClient.put('/users/me', {
         displayName: displayName.trim(),
       });
       updateUser({ displayName: displayName.trim() });
@@ -54,6 +64,16 @@ export default function ProfilePage() {
     }
   };
 
+  const handleUnblock = async (userId: string) => {
+    try {
+      await blockApi.unblockUser(userId);
+      removeBlock(userId);
+      setBlockedUsers((prev) => prev.filter((b) => b.blockedId !== userId));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-lg mx-auto px-4 py-8">
@@ -74,11 +94,11 @@ export default function ProfilePage() {
             <div className="relative mb-4">
               {user?.avatarUrl ? (
                 <img
-  src={user.avatarUrl}
-  alt="Avatar"
-  crossOrigin="anonymous"
-  className="w-24 h-24 rounded-full object-cover"
-/>
+                  src={user.avatarUrl}
+                  alt="Avatar"
+                  crossOrigin="anonymous"
+                  className="w-24 h-24 rounded-full object-cover"
+                />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 text-3xl font-medium">
                   {user?.displayName?.[0] || user?.email?.[0]?.toUpperCase()}
@@ -158,7 +178,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 mb-4">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Account
           </h2>
@@ -176,13 +196,59 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between py-2">
               <span className="text-sm text-gray-600 dark:text-gray-400">Verified</span>
               <span className={`text-sm font-medium ${
-                user?.isVerified ? 'text-green-600 dark:text-green-400' : 'text-red-500'
+                user?.isVerified
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-500'
               }`}>
                 {user?.isVerified ? 'Yes' : 'No'}
               </span>
             </div>
           </div>
         </div>
+
+        {blockedUsers.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              Blocked users
+            </h2>
+            <div className="space-y-2">
+              {blockedUsers.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between py-2"
+                >
+                  <div className="flex items-center gap-3">
+                    {b.blocked?.avatarUrl ? (
+                      <img
+                        src={b.blocked.avatarUrl}
+                        alt="Avatar"
+                        crossOrigin="anonymous"
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-medium">
+                        {b.blocked?.displayName?.[0] ||
+                          b.blocked?.email?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {b.blocked?.displayName || b.blocked?.email}
+                      </p>
+                      <p className="text-xs text-gray-400">{b.blocked?.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleUnblock(b.blockedId)}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium transition"
+                  >
+                    Unblock
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

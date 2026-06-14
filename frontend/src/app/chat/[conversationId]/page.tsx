@@ -12,6 +12,8 @@ import MessageBubble from '@/components/chat/MessageBubble';
 import MessageInput from '@/components/chat/MessageInput';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import ClearChatDialog from '@/components/chat/ClearChatDialog';
+import { blockApi } from '@/services/block.api';
+import { useBlockStore } from '@/store/block.store';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -38,6 +40,9 @@ export default function ConversationPage() {
   const convMessages = messages[conversationId] || [];
   const typingInConv = typingUsers[conversationId] || [];
   const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const { isBlocked, addBlock, removeBlock } = useBlockStore();
+  const [blockLoading, setBlockLoading] = useState(false);
+  const isUserBlocked = otherUser ? isBlocked(otherUser.id) : false;
 
   useEffect(() => {
     if (!conversationId) return;
@@ -133,6 +138,23 @@ export default function ConversationPage() {
       </div>
     );
   }
+  const handleToggleBlock = async () => {
+  if (!otherUser) return;
+  setBlockLoading(true);
+  try {
+    if (isUserBlocked) {
+      await blockApi.unblockUser(otherUser.id);
+      removeBlock(otherUser.id);
+    } else {
+      await blockApi.blockUser(otherUser.id);
+      addBlock(otherUser.id);
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setBlockLoading(false);
+  }
+};
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
@@ -227,6 +249,20 @@ export default function ConversationPage() {
               >
                 Delete chat
               </button>
+
+              {otherUser && (
+  <button
+    onClick={() => { handleToggleBlock(); setShowMenu(false); }}
+    disabled={blockLoading}
+    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
+      isUserBlocked
+        ? 'text-green-600 dark:text-green-400'
+        : 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+    }`}
+  >
+    {blockLoading ? 'Loading...' : isUserBlocked ? 'Unblock user' : 'Block user'}
+  </button>
+)}
             </div>
           )}
         </div>
@@ -240,7 +276,7 @@ export default function ConversationPage() {
             </p>
           </div>
         ) : (
-          
+
 convMessages.map((message) => (
   <MessageBubble
     key={message.id}
@@ -256,12 +292,21 @@ convMessages.map((message) => (
         <div ref={bottomRef} />
       </div>
 
+      {otherUser && isUserBlocked && (
+  <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800 shrink-0">
+    <p className="text-sm text-red-600 dark:text-red-400 text-center">
+      You have blocked this user. Unblock to send messages.
+    </p>
+  </div>
+)}
+
      <div className="shrink-0">
   <MessageInput
-    conversationId={conversationId}
-    replyTo={replyTo}
-    onCancelReply={() => setReplyTo(null)}
-  />
+  conversationId={conversationId}
+  replyTo={replyTo}
+  onCancelReply={() => setReplyTo(null)}
+  disabled={otherUser ? isBlocked(otherUser.id) : false}
+/>
 </div>
 
       {showClearDialog && (

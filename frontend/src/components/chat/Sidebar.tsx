@@ -10,6 +10,8 @@ import apiClient from '@/lib/api.client';
 import ChatListItem from './ChatListItem';
 import NewChatModal from './NewChatModal';
 import NotificationPanel from './NotificationPanel';
+import { useBlockStore } from '@/store/block.store';
+import { blockApi } from '@/services/block.api';
 
 export default function Sidebar() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function Sidebar() {
   const [loading, setLoading] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState('');
+  const { setBlockedUsers } = useBlockStore();
 
   useEffect(() => {
     messageApi.getConversations().then((data) => {
@@ -29,6 +32,10 @@ export default function Sidebar() {
         new Date(b.conversation.updatedAt).getTime() -
         new Date(a.conversation.updatedAt).getTime()
       );
+
+      blockApi.getBlockedUsers().then((blocked) => {
+  setBlockedUsers(blocked.map((b: any) => b.blockedId));
+});
       setConversations(sorted);
     }).finally(() => setLoading(false));
 
