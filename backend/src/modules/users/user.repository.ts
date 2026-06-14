@@ -27,6 +27,14 @@ export class UserRepository {
       '(user.email ILIKE :query OR user.displayName ILIKE :query)',
       { query: `%${query}%` }
     )
+    .andWhere(
+      `user.id NOT IN (
+        SELECT b."blockedId" FROM blocks b WHERE b."blockerId" = :currentUserId
+        UNION
+        SELECT b."blockerId" FROM blocks b WHERE b."blockedId" = :currentUserId
+      )`,
+      { currentUserId }
+    )
     .limit(20)
     .getMany();
 }

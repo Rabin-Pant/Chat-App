@@ -15,6 +15,7 @@ import reactionRoutes from './modules/reactions/reaction.routes';
 import path from 'path';
 import { upload } from './middleware/upload.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
+import blockRoutes from './modules/users/block.routes';
 
 class App {
   public app: Application;
@@ -47,6 +48,7 @@ class App {
     this.app.use('/api/users', userRoutes);
     this.app.use('/api/chat', messageRoutes);
     this.app.use('/api/groups', groupRoutes);
+    this.app.use('/api/blocks', blockRoutes);
     this.app.use('/api/notifications', notificationRoutes);
     this.app.use('/api/reactions', reactionRoutes);
     this.app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
