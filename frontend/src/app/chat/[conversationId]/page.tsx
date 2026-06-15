@@ -42,6 +42,7 @@ export default function ConversationPage() {
   const [blockedMemberWarning, setBlockedMemberWarning] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const convMessages = messages[conversationId] || [];
   const typingInConv = typingUsers[conversationId] || [];
   const isCurrentUserBlocked = otherUser ? isUserBlocked(otherUser.id) : false;
@@ -128,8 +129,16 @@ export default function ConversationPage() {
   }, [conversationId, conversations]);
 
   useEffect(() => {
+  if (!loading && convMessages.length > 0) {
+    bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+  }
+}, [loading]);
+
+useEffect(() => {
+  if (!loading) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [convMessages.length]);
+  }
+}, [convMessages.length]);
 
   const handleToggleBlock = async () => {
     if (!otherUser) return;
@@ -294,7 +303,10 @@ export default function ConversationPage() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 min-h-0 bg-white dark:bg-gray-900">
+      <div
+  ref={messagesContainerRef}
+  className="flex-1 overflow-y-auto px-4 py-4 space-y-1 min-h-0 bg-white dark:bg-gray-900"
+>
         {convMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-400 dark:text-gray-500 text-sm">
