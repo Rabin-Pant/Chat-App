@@ -17,6 +17,8 @@ export class ChatGateway {
   }
 
 async onNewMessage(message: MessageEntity): Promise<void> {
+  await this.conversationRepository.updateTimestamp(message.conversationId);
+
   this.socketManager.emitToConversation(
     message.conversationId,
     'message:receive',

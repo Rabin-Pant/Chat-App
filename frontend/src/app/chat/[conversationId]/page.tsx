@@ -4,7 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useChatStore } from '@/store/chat.store';
 import { useAuthStore } from '@/store/auth.store';
 import { usePresenceStore } from '@/store/presence.store';
+import { useBlockStore } from '@/store/block.store';
 import { messageApi } from '@/services/message.api';
+import { blockApi } from '@/services/block.api';
 import { getSocket } from '@/lib/socket';
 import { Message, User, Group } from '@/types/chat.types';
 import apiClient from '@/lib/api.client';
@@ -12,8 +14,6 @@ import MessageBubble from '@/components/chat/MessageBubble';
 import MessageInput from '@/components/chat/MessageInput';
 import TypingIndicator from '@/components/chat/TypingIndicator';
 import ClearChatDialog from '@/components/chat/ClearChatDialog';
-import { blockApi } from '@/services/block.api';
-import { useBlockStore } from '@/store/block.store';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -31,18 +31,20 @@ export default function ConversationPage() {
     conversations,
   } = useChatStore();
   const { isOnline } = usePresenceStore();
+  const { isBlocked: isUserBlocked, addBlock, removeBlock } = useBlockStore();
   const [loading, setLoading] = useState(true);
   const [otherUser, setOtherUser] = useState<User | null>(null);
   const [group, setGroup] = useState<Group | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [blockedError, setBlockedError] = useState('');
+  const [blockedMemberWarning, setBlockedMemberWarning] = useState('');
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const convMessages = messages[conversationId] || [];
   const typingInConv = typingUsers[conversationId] || [];
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
-  const { isBlocked, addBlock, removeBlock } = useBlockStore();
-  const [blockLoading, setBlockLoading] = useState(false);
-  const isUserBlocked = otherUser ? isBlocked(otherUser.id) : false;
+  const isCurrentUserBlocked = otherUser ? isUserBlocked(otherUser.id) : false;
 
   useEffect(() => {
     if (!conversationId) return;
@@ -64,7 +66,19 @@ export default function ConversationPage() {
       if (uc.conversation.type === 'dm' && uc.otherUser) {
         setOtherUser(uc.otherUser);
       } else if (uc.conversation.type === 'group' && uc.group) {
-        setGroup(uc.group as Group);
+        const g = uc.group as Group;
+        setGroup(g);
+        if (g.members) {
+          const blockedMembers = g.members.filter(
+            (m) => m.userId !== user?.id && isUserBlocked(m.userId)
+          );
+          if (blockedMembers.length > 0) {
+            const names = blockedMembers
+              .map((m) => m.user?.displayName || m.user?.email || 'A user')
+              .join(', ');
+            setBlockedMemberWarning(`${names} you have blocked is in this group`);
+          }
+        }
       }
     }
 
@@ -117,6 +131,25 @@ export default function ConversationPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [convMessages.length]);
 
+  const handleToggleBlock = async () => {
+    if (!otherUser) return;
+    setBlockLoading(true);
+    try {
+      if (isCurrentUserBlocked) {
+        await blockApi.unblockUser(otherUser.id);
+        removeBlock(otherUser.id);
+        setBlockedError('');
+      } else {
+        await blockApi.blockUser(otherUser.id);
+        addBlock(otherUser.id);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBlockLoading(false);
+    }
+  };
+
   const headerName = otherUser
     ? otherUser.displayName || otherUser.email
     : group
@@ -138,23 +171,6 @@ export default function ConversationPage() {
       </div>
     );
   }
-  const handleToggleBlock = async () => {
-  if (!otherUser) return;
-  setBlockLoading(true);
-  try {
-    if (isUserBlocked) {
-      await blockApi.unblockUser(otherUser.id);
-      removeBlock(otherUser.id);
-    } else {
-      await blockApi.blockUser(otherUser.id);
-      addBlock(otherUser.id);
-    }
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setBlockLoading(false);
-  }
-};
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white dark:bg-gray-900">
@@ -203,8 +219,7 @@ export default function ConversationPage() {
                   ? 'Online'
                   : otherUser.lastSeenAt
                   ? `Last seen ${new Date(otherUser.lastSeenAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
+                      hour: '2-digit', minute: '2-digit',
                     })}`
                   : 'Offline'}
               </p>
@@ -228,7 +243,7 @@ export default function ConversationPage() {
             </svg>
           </button>
           {showMenu && (
-            <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 z-10 min-w-40">
+            <div className="absolute right-0 top-10 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 z-10 min-w-44">
               {group && (
                 <button
                   onClick={() => {
@@ -249,24 +264,35 @@ export default function ConversationPage() {
               >
                 Delete chat
               </button>
-
               {otherUser && (
-  <button
-    onClick={() => { handleToggleBlock(); setShowMenu(false); }}
-    disabled={blockLoading}
-    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
-      isUserBlocked
-        ? 'text-green-600 dark:text-green-400'
-        : 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-    }`}
-  >
-    {blockLoading ? 'Loading...' : isUserBlocked ? 'Unblock user' : 'Block user'}
-  </button>
-)}
+                <button
+                  onClick={() => { handleToggleBlock(); setShowMenu(false); }}
+                  disabled={blockLoading}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                    isCurrentUserBlocked
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                  }`}
+                >
+                  {blockLoading
+                    ? 'Loading...'
+                    : isCurrentUserBlocked
+                    ? 'Unblock user'
+                    : 'Block user'}
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {blockedMemberWarning && (
+        <div className="mx-4 mt-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl shrink-0">
+          <p className="text-xs text-amber-700 dark:text-amber-400 text-center">
+            ⚠️ {blockedMemberWarning}
+          </p>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 min-h-0 bg-white dark:bg-gray-900">
         {convMessages.length === 0 ? (
@@ -276,38 +302,46 @@ export default function ConversationPage() {
             </p>
           </div>
         ) : (
-
-convMessages.map((message) => (
-  <MessageBubble
-    key={message.id}
-    message={message}
-    isOwn={message.senderId === user?.id}
-    conversationId={conversationId}
-    isGroup={!!group}
-    onReply={(msg) => setReplyTo(msg)}
-  />
-))
+          convMessages.map((message) => (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              isOwn={message.senderId === user?.id}
+              conversationId={conversationId}
+              isGroup={!!group}
+              onReply={(msg) => setReplyTo(msg)}
+            />
+          ))
         )}
         {typingInConv.length > 0 && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
-      {otherUser && isUserBlocked && (
-  <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800 shrink-0">
-    <p className="text-sm text-red-600 dark:text-red-400 text-center">
-      You have blocked this user. Unblock to send messages.
-    </p>
-  </div>
-)}
+      {otherUser && isCurrentUserBlocked && (
+        <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800 shrink-0">
+          <p className="text-sm text-red-600 dark:text-red-400 text-center">
+            You have blocked this user. Unblock to send messages.
+          </p>
+        </div>
+      )}
 
-     <div className="shrink-0">
-  <MessageInput
-  conversationId={conversationId}
-  replyTo={replyTo}
-  onCancelReply={() => setReplyTo(null)}
-  disabled={otherUser ? isBlocked(otherUser.id) : false}
-/>
-</div>
+      {blockedError && (
+        <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-t border-red-100 dark:border-red-800 shrink-0">
+          <p className="text-sm text-red-600 dark:text-red-400 text-center">
+            {blockedError}
+          </p>
+        </div>
+      )}
+
+      <div className="shrink-0">
+        <MessageInput
+          conversationId={conversationId}
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
+          disabled={otherUser ? isCurrentUserBlocked : false}
+          onBlockedError={(msg) => setBlockedError(msg)}
+        />
+      </div>
 
       {showClearDialog && (
         <ClearChatDialog

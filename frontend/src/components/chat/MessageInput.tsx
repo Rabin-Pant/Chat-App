@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { messageApi } from '@/services/message.api';
 import { useChatStore } from '@/store/chat.store';
 import { getSocket } from '@/lib/socket';
@@ -11,9 +11,16 @@ interface Props {
   replyTo?: Message | null;
   onCancelReply?: () => void;
   disabled?: boolean;
+  onBlockedError?: (msg: string) => void;
 }
 
-export default function MessageInput({ conversationId, replyTo, onCancelReply, disabled }: Props) {
+export default function MessageInput({
+  conversationId,
+  replyTo,
+  onCancelReply,
+  disabled,
+  onBlockedError,
+}: Props) {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -22,7 +29,18 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply, d
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socket = getSocket();
 
+  useEffect(() => {
+    return () => {
+      socket.emit('typing:stop', conversationId);
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    };
+  }, [conversationId]);
+
   const handleTyping = () => {
+    if (!content.trim()) {
+      socket.emit('typing:stop', conversationId);
+      return;
+    }
     socket.emit('typing:start', conversationId);
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     typingTimeout.current = setTimeout(() => {
@@ -33,6 +51,8 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply, d
   const handleSend = async () => {
     if (!content.trim() || sending) return;
     setSending(true);
+    if (typingTimeout.current) clearTimeout(typingTimeout.current);
+    socket.emit('typing:stop', conversationId);
     try {
       const message = await messageApi.sendMessage(
         conversationId,
@@ -42,9 +62,11 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply, d
       addMessage(message);
       setContent('');
       if (onCancelReply) onCancelReply();
-      socket.emit('typing:stop', conversationId);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || '';
+      if (msg.includes('blocked')) {
+        onBlockedError?.('You cannot send messages to this user.');
+      }
     } finally {
       setSending(false);
     }
@@ -60,14 +82,23 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply, d
       const { data } = await apiClient.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+
+      const body: any = { content: data.url, type: 'image' };
+      if (replyTo?.id) body.replyToId = replyTo.id;
+
       const message = await apiClient.post(
         `/chat/conversations/${conversationId}/messages`,
-        { content: data.url, type: 'image', replyToId: replyTo?.id }
+        body
       );
       addMessage(message.data.message);
       if (onCancelReply) onCancelReply();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || '';
+      if (msg.includes('blocked')) {
+        onBlockedError?.('You cannot send messages to this user.');
+      } else {
+        console.error(err);
+      }
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -98,9 +129,9 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply, d
         </div>
       )}
       <div className="px-4 py-3">
-      <div className={`flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2 ${
-  disabled ? 'opacity-50 pointer-events-none' : ''
-}`}>
+        <div className={`flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-2 ${
+          disabled ? 'opacity-50 pointer-events-none' : ''
+        }`}>
           <input
             ref={fileInputRef}
             type="file"
@@ -127,7 +158,15 @@ export default function MessageInput({ conversationId, replyTo, onCancelReply, d
           <input
             type="text"
             value={content}
-            onChange={(e) => { setContent(e.target.value); handleTyping(); }}
+            onChange={(e) => {
+              setContent(e.target.value);
+              if (!e.target.value.trim()) {
+                socket.emit('typing:stop', conversationId);
+                if (typingTimeout.current) clearTimeout(typingTimeout.current);
+              } else {
+                handleTyping();
+              }
+            }}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
             placeholder="Type a message..."
             className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none"

@@ -9,9 +9,9 @@ export class ConversationRepository {
   private repository = AppDataSource.getRepository(ConversationEntity);
   private ucRepository = AppDataSource.getRepository(UserConversationEntity);
 
-  async findById(id: string): Promise<ConversationEntity | null> {
-    return this.repository.findOne({ where: { id } });
-  }
+ async findById(id: string): Promise<ConversationEntity | null> {
+  return this.repository.findOne({ where: { id } });
+}
 
   async findDMBetweenUsers(userAId: string, userBId: string): Promise<ConversationEntity | null> {
     return this.repository
@@ -98,6 +98,10 @@ export class ConversationRepository {
     const uc = await this.ucRepository.findOne({ where: { userId, conversationId } });
     return !!uc;
   }
+
+  async updateTimestamp(conversationId: string): Promise<void> {
+  await this.repository.update(conversationId, { updatedAt: new Date() });
+}
 
  async getConversationMemberIds(conversationId: string): Promise<string[]> {
   const members = await this.ucRepository.find({

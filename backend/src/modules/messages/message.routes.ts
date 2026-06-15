@@ -28,10 +28,10 @@ router.put('/conversations/:conversationId/read', async (req: Request, res: Resp
   await msgService.markConversationAsRead(conversationId, user.id);
   res.json({ message: 'Marked as read' });
 });
+
 router.get('/conversations/:conversationId/messages', messageController.getMessages);
 router.post('/conversations/:conversationId/messages', messageController.sendMessage);
 router.delete('/messages/:messageId/soft', messageController.softDelete);
 router.delete('/messages/:messageId/hard', messageController.hardDelete);
-router.delete('/messages/:messageId/unsend', messageController.unsendMessage);
 
 export default router;

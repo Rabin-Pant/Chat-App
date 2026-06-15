@@ -12,41 +12,44 @@ export class MessageService {
   private blockService = new BlockService();
 
   async sendMessage(
-    conversationId: string,
-    senderId: string,
-    content: string,
-    type: MessageType = MessageType.TEXT,
-    replyToId?: string
-  ): Promise<MessageEntity> {
-    const isMember = await this.conversationRepository.isUserInConversation(
-      senderId, conversationId
-    );
-    if (!isMember) throw new Error('Not a member of this conversation');
+  conversationId: string,
+  senderId: string,
+  content: string,
+  type: MessageType = MessageType.TEXT,
+  replyToId?: string
+): Promise<MessageEntity> {
+  const isMember = await this.conversationRepository.isUserInConversation(
+    senderId, conversationId
+  );
+  if (!isMember) throw new Error('Not a member of this conversation');
 
+  const conversation = await this.conversationRepository.findById(conversationId);
+
+  if (conversation?.type === 'dm') {
     const memberIds = await this.conversationRepository.getConversationMemberIds(
       conversationId
     );
-
     for (const memberId of memberIds) {
       if (memberId === senderId) continue;
       const blocked = await this.blockService.isEitherBlocked(senderId, memberId);
       if (blocked) throw new Error('Cannot send message — user is blocked');
     }
-
-    const message = await this.messageRepository.createMessage({
-      conversationId,
-      senderId,
-      content,
-      type,
-      status: MessageStatus.SENT,
-      deletedForUsers: [],
-      readByUsers: [],
-      replyToId: replyToId || null,
-    });
-
-    await this.chatGateway.onNewMessage(message);
-    return message;
   }
+
+  const message = await this.messageRepository.createMessage({
+    conversationId,
+    senderId,
+    content,
+    type,
+    status: MessageStatus.SENT,
+    deletedForUsers: [],
+    readByUsers: [],
+    replyToId: replyToId || null,
+  });
+
+  await this.chatGateway.onNewMessage(message);
+  return message;
+}
 
   async getMessages(
     conversationId: string,

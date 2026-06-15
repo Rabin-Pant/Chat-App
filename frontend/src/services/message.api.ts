@@ -26,14 +26,16 @@ export const messageApi = {
     return data.messages;
   },
 
-  sendMessage: async (
+sendMessage: async (
   conversationId: string,
   content: string,
   replyToId?: string
 ): Promise<Message> => {
+  const body: any = { content };
+  if (replyToId) body.replyToId = replyToId;
   const { data } = await apiClient.post(
     `/chat/conversations/${conversationId}/messages`,
-    { content, replyToId }
+    body
   );
   return data.message;
 },
@@ -44,10 +46,6 @@ export const messageApi = {
 
   hardDelete: async (messageId: string): Promise<void> => {
     await apiClient.delete(`/chat/messages/${messageId}/hard`);
-  },
-
-  unsend: async (messageId: string): Promise<void> => {
-    await apiClient.delete(`/chat/messages/${messageId}/unsend`);
   },
 
   clearConversation: async (conversationId: string): Promise<void> => {
