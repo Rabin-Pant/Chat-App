@@ -231,6 +231,34 @@ NEXT_PUBLIC_API_URL=http://localhost:5000/api
 NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
 ```
 
+# Database
+
+## Setup
+
+### Option 1 — Run migrations (recommended)
+```bash
+cd backend
+npm run migration:run
+```
+
+### Option 2 — Import schema directly
+```bash
+psql -U chatuser -d chatapp -f database/schema.sql
+```
+
+## Schema
+- `users` — user accounts and profiles
+- `otps` — OTP codes for passwordless login
+- `conversations` — DM and group conversations
+- `user_conversations` — user membership per conversation
+- `messages` — all messages with soft/hard delete support
+- `groups` — group chat metadata
+- `group_members` — group membership with roles
+- `reactions` — emoji reactions on messages
+- `notifications` — in-app notifications
+- `unreads` — unread message counts per user per conversation
+- `blocks` — blocked user relationships
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
