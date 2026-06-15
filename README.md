@@ -155,7 +155,9 @@ chat-app/
 
 │   └── .env.local
 
-└── docker-compose.yml
+└── database
+
+     └── schema.sql
 ```
 
 ## Getting Started
@@ -163,7 +165,6 @@ chat-app/
 ### Prerequisites
 - Node.js 18+
 - PostgreSQL 16
-- Docker (optional, for Redis + PostgreSQL)
 - Gmail account with App Password enabled
 - Google Cloud Console project with OAuth 2.0 credentials
 
