@@ -199,17 +199,17 @@ DB_HOST=localhost
 
 DB_PORT=5432
 
-DB_USER=chatuser
+DB_USER=your_db_username
 
-DB_PASSWORD=chatpassword
+DB_PASSWORD=your_db_password
 
 DB_NAME=chatapp
 
-JWT_SECRET=your_jwt_secret
+JWT_SECRET=your_jwt_secret_min_32_chars
 
 JWT_EXPIRES_IN=7d
 
-JWT_REFRESH_SECRET=your_refresh_secret
+JWT_REFRESH_SECRET=your_refresh_secret_min_32_chars
 
 GOOGLE_CLIENT_ID=your_google_client_id
 
