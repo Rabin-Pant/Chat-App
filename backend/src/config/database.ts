@@ -13,8 +13,8 @@ export const AppDataSource = new DataSource({
   ssl: {
     rejectUnauthorized: false,
   },
-  entities: [__dirname + '/../modules/**/**.entity{.ts,.js}'],
-  migrations: [__dirname + '/../../migrations/**/*{.ts,.js}'],
+  entities: [__dirname + '/../modules/**/**.entity.js'],
+  migrations: [],
   subscribers: [],
 });
 
