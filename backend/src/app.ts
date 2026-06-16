@@ -28,16 +28,20 @@ class App {
   }
 
   private initializeMiddlewares(): void {
-    this.app.use(helmet());
-    this.app.use(cors({
-      origin: ENV.FRONTEND_URL,
-      credentials: true,
-    }));
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
-    this.app.use(passport.initialize());
-    this.app.use(globalRateLimit);
-  }
+  this.app.use(helmet());
+  this.app.use(cors({
+    origin: [
+      'http://localhost:3000',
+      'https://chat-app-psi-ecru-73.vercel.app',
+      ENV.FRONTEND_URL,
+    ],
+    credentials: true,
+  }));
+  this.app.use(express.json());
+  this.app.use(express.urlencoded({ extended: true }));
+  this.app.use(passport.initialize());
+  this.app.use(globalRateLimit);
+}
 
   private initializeRoutes(): void {
     this.app.get('/health', (req, res) => {
