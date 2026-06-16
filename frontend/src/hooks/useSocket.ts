@@ -6,7 +6,7 @@ import { usePresenceStore } from '@/store/presence.store';
 import { messageApi } from '@/services/message.api';
 
 export const useSocket = (isAuthenticated: boolean) => {
-  const { setTyping, setReactions, addMessage, setConversations, conversations } = useChatStore();
+  const { setTyping, setReactions, addMessage, setConversations } = useChatStore();
   const { addNotification, setUnreadCount } = useNotificationStore();
   const { setUserOnline, setUserOffline } = usePresenceStore();
 
@@ -17,32 +17,50 @@ export const useSocket = (isAuthenticated: boolean) => {
     const socket = getSocket();
 
     socket.on('message:receive', async (message: any) => {
+      const { activeConversationId, conversations } = useChatStore.getState();
+
+      if (message.conversationId === activeConversationId) {
+        const updated = [...conversations];
+        const idx = updated.findIndex(
+          (c) => c.conversationId === message.conversationId
+        );
+        if (idx > 0) {
+          const [conv] = updated.splice(idx, 1);
+          updated.unshift(conv);
+          useChatStore.getState().setConversations(updated);
+        }
+        return;
+      }
+
       addMessage(message);
-      const convIndex = conversations.findIndex(
+
+      const { conversations: currentConvs } = useChatStore.getState();
+      const updated = [...currentConvs];
+      const idx = updated.findIndex(
         (c) => c.conversationId === message.conversationId
       );
-      if (convIndex > 0) {
-        const updated = [...conversations];
-        const [conv] = updated.splice(convIndex, 1);
+
+      if (idx > 0) {
+        const [conv] = updated.splice(idx, 1);
         updated.unshift(conv);
-        setConversations(updated);
-      } else if (convIndex === -1) {
+        useChatStore.getState().setConversations(updated);
+      } else if (idx === -1) {
         const fresh = await messageApi.getConversations();
         const sorted = [...fresh].sort((a, b) =>
           new Date(b.conversation.updatedAt).getTime() -
           new Date(a.conversation.updatedAt).getTime()
         );
-        setConversations(sorted);
+        useChatStore.getState().setConversations(sorted);
       }
     });
 
     socket.on('conversation:show', async () => {
-      const conversations = await messageApi.getConversations();
-      const sorted = [...conversations].sort((a, b) =>
+      const fresh = await messageApi.getConversations();
+      const sorted = [...fresh].sort((a, b) =>
         new Date(b.conversation.updatedAt).getTime() -
         new Date(a.conversation.updatedAt).getTime()
       );
-      setConversations(sorted);
+      useChatStore.getState().setConversations(sorted);
     });
 
     socket.on('typing:start', ({ userId, conversationId }: any) => {
@@ -84,5 +102,5 @@ export const useSocket = (isAuthenticated: boolean) => {
       socket.off('reaction:update');
       disconnectSocket();
     };
-  }, [isAuthenticated, conversations]);
+  }, [isAuthenticated]);
 };
