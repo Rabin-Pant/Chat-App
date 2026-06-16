@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm';
 import { ENV } from './env';
 
+const isProduction = ENV.NODE_ENV === 'production';
+
 export const AppDataSource = new DataSource({
   type: 'postgres',
   host: ENV.DB_HOST,
@@ -9,11 +11,11 @@ export const AppDataSource = new DataSource({
   password: ENV.DB_PASSWORD,
   database: ENV.DB_NAME,
   synchronize: false,
-  logging: ENV.NODE_ENV === 'development',
-  ssl: ENV.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
-  entities: [__dirname + '/../modules/**/**.entity.js'],
+  logging: !isProduction,
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  entities: isProduction
+    ? [__dirname + '/../modules/**/**.entity.js']
+    : [__dirname + '/../modules/**/**.entity.ts'],
   migrations: [],
   subscribers: [],
 });
