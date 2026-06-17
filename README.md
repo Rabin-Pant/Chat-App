@@ -171,7 +171,7 @@ Every module has its own Controller, Service, Repository, and Entity class — k
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/Rabin-Pant/Chat-App.git
+git clone https://github.com/Rabin-Pant/Chat-App
 cd Chat-App
 ```
 
@@ -222,7 +222,7 @@ GOOGLE_CALLBACK_URL=http://localhost:5000/api/auth/google/callback
 
 # Email (Gmail + App Password)
 EMAIL_USER=your_gmail@gmail.com
-EMAIL_PASS=your_gmail_app_password
+EMAIL_PASS=your_gmail_app_password (App password that you have created. Not the actual email password)
 
 # Frontend URL
 FRONTEND_URL=http://localhost:3000
