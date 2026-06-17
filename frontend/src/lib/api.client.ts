@@ -44,4 +44,11 @@ apiClient.interceptors.response.use(
   }
 );
 
+// keep Render backend alive — ping every 14 minutes
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    fetch(`${process.env.NEXT_PUBLIC_SOCKET_URL}/ping`).catch(() => {});
+  }, 14 * 60 * 1000);
+}
+
 export default apiClient;

@@ -15,12 +15,17 @@ export class SocketManager {
   public io: SocketServer;
 
   private constructor(server: HttpServer) {
-    this.io = new SocketServer(server, {
-      cors: {
-        origin: ENV.FRONTEND_URL,
-        credentials: true,
-      },
-    });
+   this.io = new SocketServer(server, {
+  cors: {
+    origin: ENV.FRONTEND_URL,
+    credentials: true,
+  },
+  transports: ['websocket'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  maxHttpBufferSize: 1e6,
+});
 
     this.io.use(this.authMiddleware);
     this.io.on('connection', this.handleConnection.bind(this));

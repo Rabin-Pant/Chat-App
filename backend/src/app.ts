@@ -16,6 +16,7 @@ import path from 'path';
 import { upload } from './middleware/upload.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
 import blockRoutes from './modules/users/block.routes';
+import compression from 'compression';
 
 class App {
   public app: Application;
@@ -37,10 +38,16 @@ class App {
     ],
     credentials: true,
   }));
+
+  this.app.get('/ping', (req, res) => {
+  res.json({ pong: true });
+});
+
   this.app.use(express.json());
   this.app.use(express.urlencoded({ extended: true }));
   this.app.use(passport.initialize());
   this.app.use(globalRateLimit);
+  this.app.use(compression());
 }
 
   private initializeRoutes(): void {

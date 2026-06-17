@@ -42,45 +42,66 @@ export class ConversationRepository {
     .orderBy('c.updatedAt', 'DESC')
     .getMany();
 
-  const result = [];
-  for (const uc of ucs) {
-    const item: any = { ...uc };
+  if (ucs.length === 0) return [];
 
-   const lastMessage = await AppDataSource.getRepository(MessageEntity)
-  .createQueryBuilder('m')
-  .select([
-    'm.id',
-    'm.content',
-    'm.type',
-    'm.createdAt',
-    'm.senderId',
-  ])
-  .where('m.conversationId = :convId', { convId: uc.conversationId })
-  .orderBy('m.createdAt', 'DESC')
-  .limit(1)
-  .getOne();
+  const conversationIds = ucs.map((uc) => uc.conversationId);
 
-    item.lastMessage = lastMessage || null;
+  const lastMessages = await AppDataSource.getRepository(MessageEntity)
+    .createQueryBuilder('m')
+    .select(['m.conversationId', 'm.id', 'm.content', 'm.type', 'm.createdAt', 'm.senderId'])
+    .where('m.conversationId IN (:...ids)', { ids: conversationIds })
+    .andWhere(
+      'm.createdAt = (SELECT MAX(m2."createdAt") FROM messages m2 WHERE m2."conversationId" = m."conversationId")'
+    )
+    .getMany();
 
-    if (uc.conversation.type === 'dm') {
-      const other = await this.ucRepository
+  const lastMessageMap: Record<string, any> = {};
+  for (const msg of lastMessages) {
+    lastMessageMap[msg.conversationId] = msg;
+  }
+
+  const otherUserIds = ucs
+    .filter((uc) => uc.conversation.type === 'dm')
+    .map((uc) => uc.conversationId);
+
+  const otherUsers = otherUserIds.length > 0
+    ? await this.ucRepository
         .createQueryBuilder('uc2')
         .innerJoinAndSelect('uc2.user', 'u')
-        .where('uc2.conversationId = :convId', { convId: uc.conversationId })
+        .where('uc2.conversationId IN (:...ids)', { ids: otherUserIds })
         .andWhere('uc2.userId != :userId', { userId })
-        .getOne();
-      item.otherUser = other?.user || null;
-    } else {
-      const group = await AppDataSource.getRepository(GroupEntity)
-        .findOne({
-          where: { conversationId: uc.conversationId },
-          relations: { members: { user: true } },
-        });
-      item.group = group || null;
-    }
-    result.push(item);
+        .getMany()
+    : [];
+
+  const otherUserMap: Record<string, any> = {};
+  for (const uc of otherUsers) {
+    otherUserMap[uc.conversationId] = uc.user;
   }
-  return result;
+
+  const groupConvIds = ucs
+    .filter((uc) => uc.conversation.type === 'group')
+    .map((uc) => uc.conversationId);
+
+  const groups = groupConvIds.length > 0
+    ? await AppDataSource.getRepository(GroupEntity)
+        .createQueryBuilder('g')
+        .leftJoinAndSelect('g.members', 'members')
+        .leftJoinAndSelect('members.user', 'memberUser')
+        .where('g.conversationId IN (:...ids)', { ids: groupConvIds })
+        .getMany()
+    : [];
+
+  const groupMap: Record<string, any> = {};
+  for (const group of groups) {
+    groupMap[group.conversationId] = group;
+  }
+
+  return ucs.map((uc) => ({
+    ...uc,
+    lastMessage: lastMessageMap[uc.conversationId] || null,
+    otherUser: otherUserMap[uc.conversationId] || null,
+    group: groupMap[uc.conversationId] || null,
+  }));
 }
 
   async findUserConversation(userId: string, conversationId: string): Promise<UserConversationEntity | null> {

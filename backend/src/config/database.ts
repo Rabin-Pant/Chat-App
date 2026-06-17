@@ -11,13 +11,21 @@ export const AppDataSource = new DataSource({
   password: ENV.DB_PASSWORD,
   database: ENV.DB_NAME,
   synchronize: false,
-  logging: !isProduction,
+  logging: false,
   ssl: isProduction ? { rejectUnauthorized: false } : false,
   entities: isProduction
     ? [__dirname + '/../modules/**/**.entity.js']
     : [__dirname + '/../modules/**/**.entity.ts'],
   migrations: [],
   subscribers: [],
+  poolSize: 10,
+  connectTimeoutMS: 10000,
+  extra: {
+    max: 10,
+    min: 2,
+    acquire: 30000,
+    idle: 10000,
+  },
 });
 
 export const connectDatabase = async (): Promise<void> => {
