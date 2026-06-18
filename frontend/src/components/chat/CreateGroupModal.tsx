@@ -152,33 +152,44 @@ export default function CreateGroupModal({ onClose }: Props) {
               ) : users.length === 0 && query.length >= 2 ? (
                 <p className="text-center text-gray-400 text-sm py-4">No users found</p>
               ) : (
-                users.map((user) => {
-                  const isSelected = !!selected.find((u) => u.id === user.id);
-                  return (
-                    <div
-                      key={user.id}
-                      onClick={() => toggleUser(user)}
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${
-                        isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm shrink-0">
-                        {user.displayName?.[0] || user.email[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user.displayName || user.email}
-                        </p>
-                        <p className="text-xs text-gray-400">{user.email}</p>
-                      </div>
-                      {isSelected && (
-                        <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                  );
-                })
+              users.map((user) => {
+  const isSelected = !!selected.find((u) => u.id === user.id);
+  return (
+    <div
+      key={user.id}
+      onClick={() => toggleUser(user)}
+      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition ${
+        isSelected ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+      }`}
+    >
+      <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden">
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={user.displayName || user.email}
+            crossOrigin="anonymous"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm">
+            {user.displayName?.[0] || user.email[0].toUpperCase()}
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          {user.displayName || user.email}
+        </p>
+        <p className="text-xs text-gray-400">{user.email}</p>
+      </div>
+      {isSelected && (
+        <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </div>
+  );
+})
               )}
             </div>
             <div className="flex gap-2">

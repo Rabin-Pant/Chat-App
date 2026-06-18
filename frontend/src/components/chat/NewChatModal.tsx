@@ -148,23 +148,34 @@ export default function NewChatModal({ onClose }: Props) {
             users.length === 0 && query.length >= 2 ? (
               <p className="text-center text-gray-400 text-sm py-4">No users found</p>
             ) : (
-              users.map((user) => (
-                <div
-                  key={user.id}
-                  onClick={() => handleStartDM(user.id)}
-                  className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition"
-                >
-                  <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm shrink-0">
-                    {user.displayName?.[0] || user.email[0].toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {user.displayName || user.email}
-                    </p>
-                    <p className="text-xs text-gray-400">{user.email}</p>
-                  </div>
-                </div>
-              ))
+             users.map((user) => (
+  <div
+    key={user.id}
+    onClick={() => handleStartDM(user.id)}
+    className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer transition"
+  >
+    <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden">
+      {user.avatarUrl ? (
+        <img
+          src={user.avatarUrl}
+          alt={user.displayName || user.email}
+          crossOrigin="anonymous"
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <div className="w-full h-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium text-sm">
+          {user.displayName?.[0] || user.email[0].toUpperCase()}
+        </div>
+      )}
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        {user.displayName || user.email}
+      </p>
+      <p className="text-xs text-gray-400">{user.email}</p>
+    </div>
+  </div>
+))
             )
           ) : tab === 'findgroup' ? (
             groups.length === 0 && query.length >= 2 ? (
