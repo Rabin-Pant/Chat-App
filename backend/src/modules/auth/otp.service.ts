@@ -50,20 +50,19 @@ export class OtpService {
   }
 
   async sendOtpEmail(email: string, code: string): Promise<void> {
-    // We cast the config object "as any" to bypass TypeScript's strict 
-    // overload checks, which often reject 'family: 4' or the timeouts
+    console.log(`Attempting to send OTP to ${email} via Port 587...`); // Add this for Render logs
+
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,        
+      secure: false,     
+      requireTLS: true,  
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-      family: 4, // Required for Render's IPv6 issue
+      family: 4,         
       connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
     } as any);
 
     await transporter.sendMail({
@@ -79,5 +78,7 @@ export class OtpService {
         </div>
       `,
     });
+    
+    console.log('OTP sent successfully!'); 
   }
 }
