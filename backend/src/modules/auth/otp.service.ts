@@ -50,13 +50,21 @@ export class OtpService {
   }
 
   async sendOtpEmail(email: string, code: string): Promise<void> {
+    // We cast the config object "as any" to bypass TypeScript's strict 
+    // overload checks, which often reject 'family: 4' or the timeouts
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
-    });
+      family: 4, // Required for Render's IPv6 issue
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+    } as any);
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
