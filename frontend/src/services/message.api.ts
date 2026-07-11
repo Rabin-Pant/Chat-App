@@ -17,7 +17,7 @@ export const messageApi = {
     limit = 50,
     before?: string
   ): Promise<Message[]> => {
-    const params: any = { limit };
+    const params: { limit: number; before?: string } = { limit };
     if (before) params.before = before;
     const { data } = await apiClient.get(
       `/chat/conversations/${conversationId}/messages`,
@@ -31,7 +31,7 @@ sendMessage: async (
   content: string,
   replyToId?: string
 ): Promise<Message> => {
-  const body: any = { content };
+  const body: { content: string; replyToId?: string } = { content };
   if (replyToId) body.replyToId = replyToId;
   const { data } = await apiClient.post(
     `/chat/conversations/${conversationId}/messages`,

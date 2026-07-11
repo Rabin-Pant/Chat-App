@@ -5,6 +5,7 @@ export const ENV = {
   // server
   PORT: process.env.PORT || '5000',
   NODE_ENV: process.env.NODE_ENV || 'development',
+  BACKEND_URL: process.env.BACKEND_URL || '',
 
   // database
   DB_HOST: process.env.DB_HOST || 'localhost',

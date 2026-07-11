@@ -18,11 +18,14 @@ import { authMiddleware } from './middleware/auth.middleware';
 import blockRoutes from './modules/users/block.routes';
 import compression from 'compression';
 
+const uploadDir = path.join(process.cwd(), 'uploads');
+
 class App {
   public app: Application;
 
   constructor() {
     this.app = express();
+    this.app.set('trust proxy', 1);
     this.initializeMiddlewares();
     this.initializeRoutes();
     this.initializeErrorHandling();
@@ -62,20 +65,21 @@ class App {
     this.app.use('/api/blocks', blockRoutes);
     this.app.use('/api/notifications', notificationRoutes);
     this.app.use('/api/reactions', reactionRoutes);
-    this.app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
     this.app.post('/api/upload', authMiddleware, upload.single('file'), (req, res) => {
-  if (!req.file) {
-    res.status(400).json({ message: 'No file uploaded' });
-    return;
-  }
-  const url = `http://localhost:5000/uploads/${req.file.filename}`;
-  res.json({ url });
-});
+      if (!req.file) {
+        res.status(400).json({ message: 'No file uploaded' });
+        return;
+      }
 
-this.app.use('/uploads', (req: any, res: any, next: any) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  next();
-}, express.static(path.join(__dirname, '../uploads')));
+      const baseUrl = ENV.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+      const url = `${baseUrl}/uploads/${req.file.filename}`;
+      res.json({ url });
+    });
+
+    this.app.use('/uploads', (req: any, res: any, next: any) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      next();
+    }, express.static(uploadDir));
   }
 
   private initializeErrorHandling(): void {
