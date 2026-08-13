@@ -72,11 +72,19 @@ export interface Reaction {
   userIds: string[];
 }
 
+export interface NotificationPayload {
+  messageId?: string;
+  conversationId?: string;
+  senderId?: string;
+  senderName?: string;
+  preview?: string;
+}
+
 export interface Notification {
   id: string;
   userId: string;
   type: 'new_message' | 'group_invite' | 'reaction';
-  payload: Record<string, any>;
+  payload: NotificationPayload;
   isRead: boolean;
   readAt: string | null;
   createdAt: string;

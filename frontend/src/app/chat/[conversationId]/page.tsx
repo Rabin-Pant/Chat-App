@@ -33,18 +33,35 @@ export default function ConversationPage() {
   const { isOnline } = usePresenceStore();
   const { isBlocked: isUserBlocked, addBlock, removeBlock } = useBlockStore();
   const [loading, setLoading] = useState(true);
-  const [otherUser, setOtherUser] = useState<User | null>(null);
-  const [group, setGroup] = useState<Group | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
   const [blockedError, setBlockedError] = useState('');
-  const [blockedMemberWarning, setBlockedMemberWarning] = useState('');
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const convMessages = messages[conversationId] || [];
   const typingInConv = typingUsers[conversationId] || [];
+
+  const uc = conversations.find((c) => c.conversationId === conversationId);
+  const otherUser: User | null =
+    uc?.conversation.type === 'dm' && uc.otherUser ? uc.otherUser : null;
+  const group: Group | null =
+    uc?.conversation.type === 'group' && uc.group ? uc.group : null;
+
+  let blockedMemberWarning = '';
+  if (group?.members) {
+    const blockedMembers = group.members.filter(
+      (m) => m.userId !== user?.id && isUserBlocked(m.userId)
+    );
+    if (blockedMembers.length > 0) {
+      const names = blockedMembers
+        .map((m) => m.user?.displayName || m.user?.email || 'A user')
+        .join(', ');
+      blockedMemberWarning = `${names} you have blocked is in this group`;
+    }
+  }
+
   const isCurrentUserBlocked = otherUser ? isUserBlocked(otherUser.id) : false;
 
   useEffect(() => {
@@ -62,28 +79,7 @@ export default function ConversationPage() {
       socket.emit('message:read', conversationId);
     });
 
-    const uc = conversations.find((c) => c.conversationId === conversationId);
-    if (uc) {
-      if (uc.conversation.type === 'dm' && uc.otherUser) {
-        setOtherUser(uc.otherUser);
-      } else if (uc.conversation.type === 'group' && uc.group) {
-        const g = uc.group as Group;
-        setGroup(g);
-        if (g.members) {
-          const blockedMembers = g.members.filter(
-            (m) => m.userId !== user?.id && isUserBlocked(m.userId)
-          );
-          if (blockedMembers.length > 0) {
-            const names = blockedMembers
-              .map((m) => m.user?.displayName || m.user?.email || 'A user')
-              .join(', ');
-            setBlockedMemberWarning(`${names} you have blocked is in this group`);
-          }
-        }
-      }
-    }
-
-    const handleNewMessage = (message: any) => {
+    const handleNewMessage = (message: Message) => {
       if (message.conversationId === conversationId) {
         addMessage(message);
         apiClient.put(`/chat/conversations/${conversationId}/read`).then(() => {
@@ -92,7 +88,7 @@ export default function ConversationPage() {
       }
     };
 
-    const handleMessageDeleted = ({ messageId, type }: any) => {
+    const handleMessageDeleted = ({ messageId, type }: { messageId: string; type: 'hard' | 'unsend' }) => {
       if (type === 'hard') {
         updateMessage(messageId, { type: 'deleted', content: null });
       } else {
@@ -100,7 +96,7 @@ export default function ConversationPage() {
       }
     };
 
-    const handleReadReceipt = ({ conversationId: convId, userId: readerId }: any) => {
+    const handleReadReceipt = ({ conversationId: convId, userId: readerId }: { conversationId: string; userId: string }) => {
       if (convId === conversationId && readerId !== user?.id) {
         const convMsgs = messages[conversationId] || [];
         convMsgs.forEach((m) => {
@@ -126,7 +122,7 @@ export default function ConversationPage() {
       socket.off('message:read', handleReadReceipt);
       setActiveConversation(null);
     };
-  }, [conversationId, conversations]);
+  }, [conversationId]);
 
   useEffect(() => {
   if (!loading && convMessages.length > 0) {

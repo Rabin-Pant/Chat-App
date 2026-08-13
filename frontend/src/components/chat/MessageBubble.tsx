@@ -23,10 +23,17 @@ const EMOJI_MAP: Record<string, string> = {
 export default function MessageBubble({ message, isOwn, conversationId, isGroup, onReply }: Props) {
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [popupDirection, setPopupDirection] = useState<'up' | 'down'>('up');
   const { updateMessage, removeMessage, reactions, setReactions } = useChatStore();
   const { user } = useAuthStore();
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
   const messageReactions = reactions[message.id] || {};
+
+  const computePopupDirection = (neededHeight: number) => {
+    const top = bubbleRef.current?.getBoundingClientRect().top ?? neededHeight;
+    setPopupDirection(top >= neededHeight + 16 ? 'up' : 'down');
+  };
 
   useEffect(() => {
     apiClient.get(`/reactions/${message.id}`).then(({ data }) => {
@@ -82,6 +89,7 @@ export default function MessageBubble({ message, isOwn, conversationId, isGroup,
   };
 
   const handleLongPress = () => {
+    computePopupDirection(isOwn ? 200 : 100);
     setShowMenu(true);
   };
 
@@ -105,7 +113,7 @@ export default function MessageBubble({ message, isOwn, conversationId, isGroup,
       className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 group`}
       onMouseLeave={() => { setShowMenu(false); setShowReactions(false); }}
     >
-      <div className="relative max-w-xs lg:max-w-md">
+      <div ref={bubbleRef} className="relative max-w-xs lg:max-w-md">
         {!isOwn && isGroup && message.sender && (
           <p className="text-xs font-medium text-blue-500 dark:text-blue-400 mb-1 px-1">
             {message.sender.displayName || message.sender.email}
@@ -205,7 +213,7 @@ export default function MessageBubble({ message, isOwn, conversationId, isGroup,
             </svg>
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); setShowReactions(!showReactions); }}
+            onClick={(e) => { e.stopPropagation(); computePopupDirection(60); setShowReactions(!showReactions); }}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
             title="React"
           >
@@ -213,7 +221,7 @@ export default function MessageBubble({ message, isOwn, conversationId, isGroup,
           </button>
           {isOwn && (
             <button
-              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              onClick={(e) => { e.stopPropagation(); computePopupDirection(200); setShowMenu(!showMenu); }}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-400"
               title="More options"
             >
@@ -226,7 +234,7 @@ export default function MessageBubble({ message, isOwn, conversationId, isGroup,
 
         {showReactions && (
           <div
-            className={`absolute top-8 ${isOwn ? 'right-0' : 'left-0'} bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-lg p-2 flex gap-1 z-10`}
+            className={`absolute ${popupDirection === 'up' ? 'bottom-full mb-1' : 'top-8'} ${isOwn ? 'right-0' : 'left-0'} bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-lg p-2 flex gap-1 z-10`}
             onClick={(e) => e.stopPropagation()}
           >
             {EMOJIS.map((emoji) => (
@@ -244,7 +252,7 @@ export default function MessageBubble({ message, isOwn, conversationId, isGroup,
 
         {showMenu && (
           <div
-            className={`absolute ${isOwn ? 'right-0' : 'left-0'} top-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 z-10 min-w-44`}
+            className={`absolute ${isOwn ? 'right-0' : 'left-0'} ${popupDirection === 'up' ? 'bottom-full mb-1' : 'top-8'} bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 z-10 min-w-44`}
             onClick={(e) => e.stopPropagation()}
           >
             <button

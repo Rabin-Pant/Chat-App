@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useNotificationStore } from '@/store/notification.store';
 import apiClient from '@/lib/api.client';
+import { Notification } from '@/types/chat.types';
 
 interface Props {
   onClose: () => void;
@@ -44,7 +45,7 @@ export default function NotificationPanel({ onClose }: Props) {
   }
 };
 
-  const handleClick = async (n: any) => {
+  const handleClick = async (n: Notification) => {
     if (!n.isRead) await handleMarkAsRead(n.id);
     if (n.payload?.conversationId) {
       router.push(`/chat/${n.payload.conversationId}`);
